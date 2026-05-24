@@ -175,12 +175,13 @@
 
     <script>
         // ==========================================
-        // 🔑 DATABASE CONNECTION CONFIGURATION
-        // ==========================================
-        const SUPABASE_URL = "https://gnsqewjsxveezexpitky.supabase.co"; 
-        const SUPABASE_ANON_KEY = "sb_publishable_cVHE5Ju2PWvsvZmdW3lINQ_SjIgP2kD";
-        
-        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+// 🔑 DATABASE CONNECTION CONFIGURATION
+// ==========================================
+// This checks Vercel's environment variables first, falling back to strings if running locally
+const SUPABASE_URL = window.env?.NEXT_PUBLIC_SUPABASE_URL || "https://gnsqewjsxveezexpitky.supabase.co"; 
+const SUPABASE_ANON_KEY = window.env?.NEXT_PUBLIC_SUPABASE_ANON_KEY || "sb_publishable_cVHE5Ju2PWvsvZmdW3lINQ_SjIgP2kD";
+
+const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
         // Core App Cache Storage
         let globalTeams = [];
