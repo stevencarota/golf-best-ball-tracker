@@ -168,7 +168,6 @@
         const DB_URL = "https://gnsqewjsxveezexpitky.supabase.co"; 
         const DB_KEY = "sb_publishable_cVHE5Ju2PWvsvZmdW3lINQ_SjIgP2kD";
         
-        // Use a uniquely named instance variable to bypass the global library name collision
         let dbClient;
         try {
             dbClient = window.supabase.createClient(DB_URL, DB_KEY);
@@ -180,19 +179,15 @@
         let globalPlayers = [];
         let currentStrokesValue = 4;
 
-        window.addEventListener('DOMContentLoaded', async () => {
-            initFormHoles();
-            await fetchDatabaseBasics();
-            await fetchAndCalculateLeaderboard();
-            initRealtimeSync();
-        });
-
+        // Standard function definitions first to make absolutely sure they compile
         function switchView(target) {
             document.getElementById('view-leaderboard').classList.toggle('hidden', target !== 'leaderboard');
             document.getElementById('view-entry').classList.toggle('hidden', target !== 'entry');
             document.getElementById('tab-leaderboard').classList.toggle('active', target === 'leaderboard');
             document.getElementById('tab-entry').classList.toggle('active', target === 'entry');
-            if (target === 'leaderboard') fetchAndCalculateLeaderboard();
+            if (target === 'leaderboard') {
+                fetchAndCalculateLeaderboard();
+            }
         }
 
         function initFormHoles() {
@@ -213,8 +208,9 @@
                 const resPlayers = await dbClient.from('players').select('*').order('player_name');
                 
                 if (resTeams.error || resPlayers.error) {
-                    const errMsg = (resTeams.error?.message || '') + " " + (resPlayers.error?.message || '');
-                    document.getElementById('loading-message').innerText = "Structure Load Error: " + errMsg;
+                    var tErrStr = resTeams.error ? resTeams.error.message : '';
+                    var pErrStr = resPlayers.error ? resPlayers.error.message : '';
+                    document.getElementById('loading-message').innerText = "Structure Load Error: " + tErrStr + " " + pErrStr;
                     return;
                 }
 
@@ -224,7 +220,7 @@
                 const selectTeam = document.getElementById('select-team');
                 if(!selectTeam) return;
                 selectTeam.innerHTML = '<option value="">-- Select Team --</option>';
-                globalTeams.forEach(t => {
+                globalTeams.forEach(function(t) {
                     let opt = document.createElement('option');
                     opt.value = t.id;
                     opt.textContent = t.team_name;
@@ -246,8 +242,8 @@
                 return;
             }
 
-            const filtered = globalPlayers.filter(p => p.team_id === teamId);
-            filtered.forEach(p => {
+            const filtered = globalPlayers.filter(function(p) { return p.team_id === teamId; });
+            filtered.forEach(function(p) {
                 let opt = document.createElement('option');
                 opt.value = p.id;
                 opt.textContent = p.player_name;
@@ -261,5 +257,140 @@
             document.getElementById('strokes-display').textContent = currentStrokesValue;
         }
 
-        function runOptimizationEngine(holeScores, targetContribution = 6) {
-            const activeHoles
+        function runOptimizationEngine(holeScores, targetContribution) {
+            var target = targetContribution === undefined ? 6 : targetContribution;
+            var activeHoles = holeScores.filter(function(h) { return h.player_a_strokes !== null || h.player_b_strokes !== null; }).length;
+            var bestScore = Infinity;
+            var optimalACount = 0;
+            var optimalBCount = 0;
+
+            function exploreBranch(idx, accumulatingStrokes, countA, countB) {
+                if (accumulatingStrokes >= bestScore) return;
+
+                if (idx === holeScores.length) {
+                    var holesLeft = 18 - activeHoles;
+                    if (activeHoles === 18 && (countA < target || countB < target)) return;
+                    if ((countA + holesLeft) < target || (countB + holesLeft) < target) return;
+
+                    if (accumulatingStrokes < bestScore) {
+                        bestScore = accumulatingStrokes;
+                        optimalACount = countA;
+                        optimalBCount = countB;
+                    }
+                    return;
+                }
+
+                var currentHole = holeScores[idx];
+                if (currentHole.player_a_strokes === null && currentHole.player_b_strokes === null) {
+                    exploreBranch(idx + 1, accumulatingStrokes, countA, countB);
+                    return;
+                }
+
+                if (currentHole.player_a_strokes !== null) {
+                    exploreBranch(idx + 1, accumulatingStrokes + currentHole.player_a_strokes, countA + 1, countB);
+                }
+                if (currentHole.player_b_strokes !== null) {
+                    exploreBranch(idx + 1, accumulatingStrokes + currentHole.player_b_strokes, countA, countB + 1);
+                }
+            }
+
+            exploreBranch(0, 0, 0, 0);
+
+            var totalParAccumulated = holeScores.reduce(function(sum, h) { 
+                return sum + (h.player_a_strokes !== null || h.player_b_strokes !== null ? h.par : 0); 
+            }, 0);
+            
+            var netRelativeScore = bestScore === Infinity ? 0 : bestScore - totalParAccumulated;
+
+            return {
+                totalStrokes: bestScore === Infinity ? 0 : bestScore,
+                relativeToPar: netRelativeScore,
+                thru: activeHoles,
+                usedA: optimalACount,
+                usedB: optimalBCount
+            };
+        }
+
+        async function fetchAndCalculateLeaderboard() {
+            try {
+                const resMatrix = await dbClient.from('team_hole_scores_matrix').select('*');
+                
+                if (resMatrix.error) {
+                    document.getElementById('leaderboard-body').innerHTML = 
+                        "<tr><td colspan='4' style='text-align:center; color:#dc2626; font-weight:bold; padding:20px; background:#fee2e2; border-radius:8px;'>" +
+                        "DATABASE ERROR: " + resMatrix.error.message + " <br> Code: " + resMatrix.error.code +
+                        "</td></tr>";
+                    return;
+                }
+
+                const tbody = document.getElementById('leaderboard-body');
+                if (!tbody) return;
+
+                var matrix = resMatrix.data;
+                if (!matrix || matrix.length === 0) {
+                    tbody.innerHTML = "<tr><td colspan='4' style='text-align:center; padding:20px; color:var(--text-sub);'>Connected successfully! <br><br> ⚠️ Matrix view returned zero scores. Check your team_hole_scores_matrix view configuration in Supabase.</td></tr>";
+                    return;
+                }
+
+                var groupedData = matrix.reduce(function(acc, row) {
+                    if (!acc[row.team_id]) acc[row.team_id] = { name: row.team_name, scores: [] };
+                    acc[row.team_id].scores.push(row);
+                    return acc;
+                }, {});
+
+                var calculatedTeams = Object.keys(groupedData).map(function(tId) {
+                    var dataBlock = groupedData[tId];
+                    var solution = runOptimizationEngine(dataBlock.scores);
+                    return Object.assign({ id: tId, name: dataBlock.name }, solution);
+                });
+
+                calculatedTeams.sort(function(x, y) { return x.relativeToPar - y.relativeToPar; });
+                tbody.innerHTML = '';
+
+                calculatedTeams.forEach(function(t) {
+                    var displayPar = t.relativeToPar === 0 ? 'E' : t.relativeToPar > 0 ? "+" + t.relativeToPar : t.relativeToPar;
+                    var strokeColor = t.relativeToPar < 0 ? '#dc2626' : t.relativeToPar > 0 ? '#334155' : '#166534';
+                    var warningIndicator = (t.thru > 12 && (t.usedA < 6 || t.usedB < 6)) ? ' ⚠️' : '';
+
+                    let tr = document.createElement('tr');
+                    tr.innerHTML = 
+                        "<td class='td-bold'>" + t.name + "</td>" +
+                        "<td class='td-bold' style='color: " + strokeColor + "'>" + displayPar + "</td>" +
+                        "<td>" + t.thru + "</td>" +
+                        "<td style='font-size: 13px; color: var(--text-sub);'>" + t.usedA + " / " + t.usedB + warningIndicator + "</td>";
+                    tbody.appendChild(tr);
+                });
+            } catch (windowError) {
+                document.getElementById('leaderboard-body').innerHTML = 
+                    "<tr><td colspan='4' style='text-align:center; color:#991b1b; padding:20px; background:#fee2e2;'>CRITICAL ENGINE CRASH: " + windowError.message + "</td></tr>";
+            }
+        }
+
+        async function handleScoreSubmit(e) {
+            e.preventDefault();
+            const player = document.getElementById('select-player').value;
+            const hole = document.getElementById('select-hole').value;
+            const submitBtn = document.getElementById('btn-submit');
+            const alertBox = document.getElementById('form-alert');
+
+            if (!player || !hole) return;
+
+            submitBtn.disabled = true;
+            alertBox.className = "alert hidden";
+
+            const { error } = await dbClient.from('scores').upsert({
+                player_id: player,
+                hole_number: parseInt(hole),
+                strokes: parseInt(currentStrokesValue)
+            }, { onConflict: 'player_id,hole_number' });
+
+            setTimeout(function() { submitBtn.disabled = false; }, 500);
+
+            if (error) {
+                alertBox.textContent = "Submission error occurred.";
+                alertBox.style.backgroundColor = "#fee2e2";
+                alertBox.style.color = "#991b1b";
+                alertBox.classList.remove('hidden');
+            } else {
+                alertBox.textContent = "Score of " + currentStrokesValue + " saved for Hole " + hole + "! ✅";
+                alertBox.style.backgroundColor = "#dcfce
