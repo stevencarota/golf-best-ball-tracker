@@ -5,58 +5,412 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Live Golf Best Ball Tracker</title>
     
-    <!-- Links your web app settings file -->
     <link rel="manifest" href="manifest.json">
-    
-    <!-- Fixes the home screen icon specifically for iPhones -->
-    <link rel="apple-touch-icon" href="SL Golf (1)">
-    
-    <!-- Theme color changes the top bar color on mobile devices -->
+    <link rel="apple-touch-icon" href="icon-192.png">
     <meta name="theme-color" content="#1e3a8a">
 
+    <!-- Load the official Supabase Browser client library from a CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
     <style>
+        :root {
+            --primary: #1e3a8a;
+            --primary-light: #eff6ff;
+            --text-main: #1e293b;
+            --text-sub: #64748b;
+            --bg: #f8fafc;
+            --card-bg: #ffffff;
+            --border: #cbd5e1;
+        }
+
         body {
             margin: 0;
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            background-color: #f8fafc;
-            color: #1e293b;
+            background-color: var(--bg);
+            color: var(--text-main);
+            min-height: 100vh;
+            padding: 12px;
+            box-sizing: border-box;
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: center;
-            min-height: 100vh;
-            text-align: center;
-            padding: 20px;
         }
-        .card {
-            background: white;
-            padding: 30px;
-            border-radius: 16px;
-            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
-            max-width: 400px;
+
+        .container {
             width: 100%;
+            max-width: 450px;
         }
-        h1 {
-            color: #1e3a8a;
-            margin-top: 0;
+
+        /* Tab Navigation */
+        nav {
+            display: flex;
+            justify-content: space-around;
+            background-color: var(--card-bg);
+            border-radius: 12px;
+            padding: 6px;
+            margin-bottom: 16px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
         }
+
+        .nav-btn {
+            border: none;
+            background: none;
+            padding: 12px 24px;
+            font-size: 15px;
+            cursor: pointer;
+            color: var(--text-sub);
+            border-bottom: 3px solid transparent;
+            font-weight: 500;
+        }
+
+        .nav-btn.active {
+            color: var(--primary);
+            border-bottom-color: var(--primary);
+            font-weight: 700;
+        }
+
+        /* Common Layout UI */
+        .view-title {
+            font-size: 20px;
+            color: var(--primary);
+            margin: 4px 0 16px 0;
+            text-align: center;
+            font-weight: 700;
+        }
+
+        .card {
+            background-color: var(--card-bg);
+            padding: 20px;
+            border-radius: 16px;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+            box-sizing: border-box;
+        }
+
+        .hidden { display: none !important; }
+
+        /* Form Styling */
+        .input-group { margin-bottom: 16px; }
+        label { display: block; font-size: 13px; font-weight: 600; color: #475569; margin-bottom: 6px; }
+        select { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--border); font-size: 16px; background-color: #fff; box-sizing: border-box; }
+        
+        /* Stepper +/- Layout */
+        .stepper { display: flex; align-items: center; justify-content: space-between; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; background-color: #fff; }
+        .step-btn { width: 64px; height: 48px; font-size: 24px; border: none; background-color: #f1f5f9; color: var(--text-main); cursor: pointer; }
+        .step-val { font-size: 22px; font-weight: 700; color: var(--primary); }
+        
+        .submit-btn { width: 100%; padding: 14px; background-color: var(--primary); color: #fff; font-size: 16px; font-weight: bold; border: none; border-radius: 8px; cursor: pointer; margin-top: 12px; }
+        .submit-btn:disabled { opacity: 0.5; }
+
+        /* Table Design */
+        .table-wrapper { background-color: var(--card-bg); border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
+        table { width: 100%; border-collapse: collapse; text-align: left; }
+        th { background-color: #f1f5f9; padding: 12px; font-size: 13px; font-weight: 600; color: #475569; }
+        tr { border-bottom: 1px solid #e2e8f0; }
+        td { padding: 14px 12px; font-size: 15px; }
+        .td-bold { font-weight: 700; color: #1e293b; }
+        .alert { padding: 12px; border-radius: 8px; font-size: 14px; font-weight: 500; margin-bottom: 16px; text-align: center; }
     </style>
 </head>
 <body>
 
-    <div class="card">
-        <h1>Welcome to my PWA! ⛳</h1>
-        <p>This app was built directly on GitHub and hosted on Vercel.</p>
-        <p>The app icons are configured and ready to test on your phone's home screen.</p>
+    <div class="container">
+        <!-- Navigation Menu -->
+        <nav>
+            <button id="tab-leaderboard" class="nav-btn active" onclick="switchView('leaderboard')">📊 Leaderboard</button>
+            <button id="tab-entry" class="nav-btn" onclick="switchView('entry')">✏️ Enter Scores</button>
+        </nav>
+
+        <!-- VIEW 1: LIVE LEADERBOARD -->
+        <div id="view-leaderboard">
+            <h2 class="view-title">Live Leaderboard</h2>
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Team</th>
+                            <th>Par</th>
+                            <th>Thru</th>
+                            <th>Used A/B</th>
+                        </tr>
+                    </thead>
+                    <tbody id="leaderboard-body">
+                        <tr><td colspan="4" style="text-align:center; color:var(--text-sub);">Loading leaderboard matrix...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- VIEW 2: MOBILE SCORE ENTRY PANEL -->
+        <div id="view-entry" class="hidden">
+            <div class="card">
+                <h2 class="view-title">Submit Hole Score</h2>
+                <div id="form-alert" class="alert hidden"></div>
+                
+                <form id="score-form" onsubmit="handleScoreSubmit(event)">
+                    <div class="input-group">
+                        <label>Team Selection</label>
+                        <select id="select-team" onchange="filterPlayersDropdown()"></select>
+                    </div>
+                    <div class="input-group">
+                        <label>Player Name</label>
+                        <select id="select-player" disabled><option value="">-- Select Team First --</option></select>
+                    </div>
+                    <div class="input-group">
+                        <label>Hole Number</label>
+                        <select id="select-hole"></select>
+                    </div>
+                    <div class="input-group">
+                        <label>Total Strokes</label>
+                        <div class="stepper">
+                            <button type="button" class="step-btn" onclick="adjustStrokes(-1)">-</button>
+                            <span id="strokes-display" class="step-val">4</span>
+                            <button type="button" class="step-btn" onclick="adjustStrokes(1)">+</button>
+                        </div>
+                    </div>
+                    <button type="submit" id="btn-submit" class="submit-btn">Submit Score</button>
+                </form>
+            </div>
+        </div>
     </div>
 
-    <!-- This script registers your app background worker so it acts like a real app -->
     <script>
+        // ==========================================
+        // 🔑 DATABASE CONNECTION CONFIGURATION
+        // ==========================================
+        const SUPABASE_URL = "https://gnsqewjsxveezexpitky.supabase.co"; 
+        const SUPABASE_ANON_KEY = "sb_publishable_cVHE5Ju2PWvsvZmdW3lINQ_SjIgP2kD";
+        
+        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        // Core App Cache Storage
+        let globalTeams = [];
+        let globalPlayers = [];
+        let currentStrokesValue = 4;
+
+        // Startup Routine
+        window.addEventListener('DOMContentLoaded', async () => {
+            initFormHoles();
+            await fetchDatabaseBasics();
+            await fetchAndCalculateLeaderboard();
+            initRealtimeSync();
+        });
+
+        // 🔄 View Switching Controller
+        function switchView(target) {
+            document.getElementById('view-leaderboard').classList.toggle('hidden', target !== 'leaderboard');
+            document.getElementById('view-entry').classList.toggle('hidden', target !== 'entry');
+            document.getElementById('tab-leaderboard').classList.toggle('active', target === 'leaderboard');
+            document.getElementById('tab-entry').classList.toggle('active', target === 'entry');
+            if (target === 'leaderboard') fetchAndCalculateLeaderboard();
+        }
+
+        // Dropdown Generation Rules
+        function initFormHoles() {
+            const selectHole = document.getElementById('select-hole');
+            for(let i=1; i<=18; i++) {
+                let opt = document.createElement('option');
+                opt.value = i;
+                opt.textContent = `Hole ${i} (Par 4)`;
+                selectHole.appendChild(opt);
+            }
+        }
+
+        // Basic Info Extractor
+        async function fetchDatabaseBasics() {
+            const { data: teamsData } = await supabase.from('teams').select('*').order('team_name');
+            const { data: playersData } = await supabase.from('players').select('*').order('player_name');
+            globalTeams = teamsData || [];
+            globalPlayers = playersData || [];
+
+            const selectTeam = document.getElementById('select-team');
+            selectTeam.innerHTML = '<option value="">-- Select Team --</option>';
+            globalTeams.forEach(t => {
+                let opt = document.createElement('option');
+                opt.value = t.id;
+                opt.textContent = t.team_name;
+                selectTeam.appendChild(opt);
+            });
+        }
+
+        // Sub-filter for player listings
+        function filterPlayersDropdown() {
+            const teamId = document.getElementById('select-team').value;
+            const selectPlayer = document.getElementById('select-player');
+            selectPlayer.innerHTML = '<option value="">-- Select Player --</option>';
+            
+            if(!teamId) {
+                selectPlayer.disabled = true;
+                return;
+            }
+
+            const filtered = globalPlayers.filter(p => p.team_id === teamId);
+            filtered.forEach(p => {
+                let opt = document.createElement('option');
+                opt.value = p.id;
+                opt.textContent = p.player_name;
+                selectPlayer.appendChild(opt);
+            });
+            selectPlayer.disabled = false;
+        }
+
+        // Stepper Functionality
+        function adjustStrokes(amount) {
+            currentStrokesValue = Math.max(1, currentStrokesValue + amount);
+            document.getElementById('strokes-display').textContent = currentStrokesValue;
+        }
+
+        // ==========================================
+        // 🧮 GOLF TEAM AUTO-OPTIMIZATION SYSTEM
+        // ==========================================
+        function runOptimizationEngine(holeScores, targetContribution = 6) {
+            const activeHoles = holeScores.filter(h => h.player_a_strokes !== null || h.player_b_strokes !== null).length;
+            let bestScore = Infinity;
+            let optimalACount = 0;
+            let optimalBCount = 0;
+
+            function exploreBranch(idx, accumulatingStrokes, countA, countB) {
+                if (accumulatingStrokes >= bestScore) return;
+
+                if (idx === holeScores.length) {
+                    const holesLeft = 18 - activeHoles;
+                    if (activeHoles === 18 && (countA < targetContribution || countB < targetContribution)) return;
+                    if ((countA + holesLeft) < targetContribution || (countB + holesLeft) < targetContribution) return;
+
+                    if (accumulatingStrokes < bestScore) {
+                        bestScore = accumulatingStrokes;
+                        optimalACount = countA;
+                        optimalBCount = countB;
+                    }
+                    return;
+                }
+
+                const currentHole = holeScores[idx];
+                if (currentHole.player_a_strokes === null && currentHole.player_b_strokes === null) {
+                    exploreBranch(idx + 1, accumulatingStrokes, countA, countB);
+                    return;
+                }
+
+                if (currentHole.player_a_strokes !== null) {
+                    exploreBranch(idx + 1, accumulatingStrokes + currentHole.player_a_strokes, countA + 1, countB);
+                }
+                if (currentHole.player_b_strokes !== null) {
+                    exploreBranch(idx + 1, accumulatingStrokes + currentHole.player_b_strokes, countA, countB + 1);
+                }
+            }
+
+            exploreBranch(0, 0, 0, 0);
+
+            const totalParAccumulated = holeScores.reduce((sum, h) => sum + (h.player_a_strokes !== null || h.player_b_strokes !== null ? h.par : 0), 0);
+            const netRelativeScore = bestScore === Infinity ? 0 : bestScore - totalParAccumulated;
+
+            return {
+                totalStrokes: bestScore === Infinity ? 0 : bestScore,
+                relativeToPar: netRelativeScore,
+                thru: activeHoles,
+                usedA: optimalACount,
+                usedB: optimalBCount
+            };
+        }
+
+        // Leaderboard Generation & Matrix Rendering
+        async function fetchAndCalculateLeaderboard() {
+            const { data: matrix, error } = await supabase.from('team_hole_scores_matrix').select('*');
+            if (error || !matrix) return;
+
+            const groupedData = matrix.reduce((acc, row) => {
+                if (!acc[row.team_id]) acc[row.team_id] = { name: row.team_name, scores: [] };
+                acc[row.team_id].scores.push(row);
+                return acc;
+            }, {});
+
+            const calculatedTeams = Object.keys(groupedData).map(tId => {
+                const dataBlock = groupedData[tId];
+                const solution = runOptimizationEngine(dataBlock.scores);
+                return { id: tId, name: dataBlock.name, ...solution };
+            });
+
+            calculatedTeams.sort((x, y) => x.relativeToPar - y.relativeToPar);
+
+            const tbody = document.getElementById('leaderboard-body');
+            tbody.innerHTML = '';
+
+            if(calculatedTeams.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">No match entries yet.</td></tr>';
+                return;
+            }
+
+            calculatedTeams.forEach(t => {
+                let displayPar = t.relativeToPar === 0 ? 'E' : t.relativeToPar > 0 ? `+${t.relativeToPar}` : t.relativeToPar;
+                let strokeColor = t.relativeToPar < 0 ? '#dc2626' : t.relativeToPar > 0 ? '#334155' : '#166534';
+                let warningIndicator = (t.thru > 12 && (t.usedA < 6 || t.usedB < 6)) ? ' ⚠️' : '';
+
+                let tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td class="td-bold">${t.name}</td>
+                    <td class="td-bold" style="color: ${strokeColor}">${displayPar}</td>
+                    <td>${t.thru}</td>
+                    <td style="font-size: 13px; color: var(--text-sub);">${t.usedA} / ${t.usedB}${warningIndicator}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        // Score Transmitter Pipeline
+        async function handleScoreSubmit(e) {
+            e.preventDefault();
+            const player = document.getElementById('select-player').value;
+            const hole = document.getElementById('select-hole').value;
+            const submitBtn = document.getElementById('btn-submit');
+            const alertBox = document.getElementById('form-alert');
+
+            if (!player || !hole) return;
+
+            submitBtn.disabled = true;
+            alertBox.className = "alert hidden";
+
+            const { error } = await supabase.from('scores').upsert({
+                player_id: player,
+                hole_number: parseInt(hole),
+                strokes: parseInt(currentStrokesValue)
+            }, { onConflict: 'player_id,hole_number' });
+
+            submitBtn.disabled = false;
+
+            if (error) {
+                alertBox.textContent = "Submission error occurred.";
+                alertBox.style.backgroundColor = "#fee2e2";
+                alertBox.style.color = "#991b1b";
+                alertBox.classList.remove('hidden');
+            } else {
+                alertBox.textContent = `Score of ${currentStrokesValue} saved for Hole ${hole}! ✅`;
+                alertBox.style.backgroundColor = "#dcfce7";
+                alertBox.style.color = "#166534";
+                alertBox.classList.remove('hidden');
+
+                // Shift to the next hole automatically
+                const nextHole = parseInt(hole) + 1;
+                if(nextHole <= 18) {
+                    document.getElementById('select-hole').value = nextHole;
+                    currentStrokesValue = 4;
+                    document.getElementById('strokes-display').textContent = 4;
+                }
+            }
+        }
+
+        // Supabase Postgres Real-Time Change Web-Socket Connection
+        function initRealtimeSync() {
+            supabase
+                .channel('public-scores-changes')
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'scores' }, () => {
+                    fetchAndCalculateLeaderboard();
+                })
+                .subscribe();
+        }
+
+        // Basic Service Worker initialization framework
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/sw.js')
-                    .then(reg => console.log('Service Worker registered!', reg))
-                    .catch(err => console.log('Service Worker registration failed: ', err));
+                navigator.serviceWorker.register('/sw.js').catch(err => console.log(err));
             });
         }
     </script>
