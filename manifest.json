@@ -1,10 +1,21 @@
 {
-  "short_name": "MyPWA",
-  "name": "My Progressive Web App",
-  "icons": [],
+  "short_name": "Scoring App",
+  "name": "rHf x SL - Best Ball Tourney",
   "start_url": "/",
-  "background_color": "#ffffff",
-  "theme_color": "#317EFB",
+  "background_color": "#f8fafc",
+  "theme_color": "#1e3a8a",
   "display": "standalone",
-  "orientation": "portrait"
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "SL Golf (1)",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "SL Golf (2)",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ]
 }
