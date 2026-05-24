@@ -8,12 +8,12 @@
   "orientation": "portrait",
   "icons": [
     {
-      "src": "SL Golf (1)",
+      "src": "192logo",
       "type": "image/png",
       "sizes": "192x192"
     },
     {
-      "src": "SL Golf (2)",
+      "src": "512logo",
       "type": "image/png",
       "sizes": "512x512"
     }
