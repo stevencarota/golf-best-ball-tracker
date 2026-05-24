@@ -175,13 +175,18 @@
 
     <script>
         // ==========================================
-// 🔑 DATABASE CONNECTION CONFIGURATION
-// ==========================================
-// This checks Vercel's environment variables first, falling back to strings if running locally
-const SUPABASE_URL = window.env?.NEXT_PUBLIC_SUPABASE_URL || "https://gnsqewjsxveezexpitky.supabase.co"; 
-const SUPABASE_ANON_KEY = window.env?.NEXT_PUBLIC_SUPABASE_ANON_KEY || "sb_publishable_cVHE5Ju2PWvsvZmdW3lINQ_SjIgP2kD";
-
-const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        // 🔑 DATABASE CONNECTION CONFIGURATION
+        // ==========================================
+        const SUPABASE_URL = "https://gnsqewjsxveezexpitky.supabase.co"; 
+        const SUPABASE_ANON_KEY = "sb_publishable_cVHE5Ju2PWvsvZmdW3lINQ_SjIgP2kD";
+        
+        // Safety check to ensure the library loaded correctly before initializing
+        let supabase;
+        try {
+            supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        } catch (e) {
+            console.error("Failed to initialize Supabase client library: ", e);
+        }
 
         // Core App Cache Storage
         let globalTeams = [];
@@ -218,19 +223,29 @@ const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
         // Basic Info Extractor
         async function fetchDatabaseBasics() {
-            const { data: teamsData } = await supabase.from('teams').select('*').order('team_name');
-            const { data: playersData } = await supabase.from('players').select('*').order('player_name');
-            globalTeams = teamsData || [];
-            globalPlayers = playersData || [];
+            try {
+                const { data: teamsData, error: tErr } = await supabase.from('teams').select('*').order('team_name');
+                const { data: playersData, error: pErr } = await supabase.from('players').select('*').order('player_name');
+                
+                if (tErr || pErr) {
+                    console.error("Error loading structural database details", tErr, pErr);
+                    return;
+                }
 
-            const selectTeam = document.getElementById('select-team');
-            selectTeam.innerHTML = '<option value="">-- Select Team --</option>';
-            globalTeams.forEach(t => {
-                let opt = document.createElement('option');
-                opt.value = t.id;
-                opt.textContent = t.team_name;
-                selectTeam.appendChild(opt);
-            });
+                globalTeams = teamsData || [];
+                globalPlayers = playersData || [];
+
+                const selectTeam = document.getElementById('select-team');
+                selectTeam.innerHTML = '<option value="">-- Select Team --</option>';
+                globalTeams.forEach(t => {
+                    let opt = document.createElement('option');
+                    opt.value = t.id;
+                    opt.textContent = t.team_name;
+                    selectTeam.appendChild(opt);
+                });
+            } catch (err) {
+                console.error("Network communication blocked fetching teams list", err);
+            }
         }
 
         // Sub-filter for player listings
@@ -313,47 +328,64 @@ const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
             };
         }
 
-        // Leaderboard Generation & Matrix Rendering
+        // Leaderboard Generation & Matrix Rendering (With Mobile Screen Error Trapping)
         async function fetchAndCalculateLeaderboard() {
-            const { data: matrix, error } = await supabase.from('team_hole_scores_matrix').select('*');
-            if (error || !matrix) return;
+            try {
+                const { data: matrix, error } = await supabase.from('team_hole_scores_matrix').select('*');
+                
+                if (error) {
+                    // Prints direct configuration issues straight to the viewport
+                    document.getElementById('leaderboard-body').innerHTML = `
+                        <tr><td colspan="4" style="text-align:center; color:#dc2626; font-weight:bold; padding:20px; background:#fee2e2; border-radius:8px;">
+                            DATABASE ERROR: ${error.message} <br> Code: ${error.code}
+                        </td></tr>`;
+                    return;
+                }
 
-            const groupedData = matrix.reduce((acc, row) => {
-                if (!acc[row.team_id]) acc[row.team_id] = { name: row.team_name, scores: [] };
-                acc[row.team_id].scores.push(row);
-                return acc;
-            }, {});
+                if (!matrix) return;
 
-            const calculatedTeams = Object.keys(groupedData).map(tId => {
-                const dataBlock = groupedData[tId];
-                const solution = runOptimizationEngine(dataBlock.scores);
-                return { id: tId, name: dataBlock.name, ...solution };
-            });
+                const groupedData = matrix.reduce((acc, row) => {
+                    if (!acc[row.team_id]) acc[row.team_id] = { name: row.team_name, scores: [] };
+                    acc[row.team_id].scores.push(row);
+                    return acc;
+                }, {});
 
-            calculatedTeams.sort((x, y) => x.relativeToPar - y.relativeToPar);
+                const calculatedTeams = Object.keys(groupedData).map(tId => {
+                    const dataBlock = groupedData[tId];
+                    const solution = runOptimizationEngine(dataBlock.scores);
+                    return { id: tId, name: dataBlock.name, ...solution };
+                });
 
-            const tbody = document.getElementById('leaderboard-body');
-            tbody.innerHTML = '';
+                calculatedTeams.sort((x, y) => x.relativeToPar - y.relativeToPar);
 
-            if(calculatedTeams.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">No match entries yet.</td></tr>';
-                return;
+                const tbody = document.getElementById('leaderboard-body');
+                tbody.innerHTML = '';
+
+                if(calculatedTeams.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:20px; color:var(--text-sub);">Connected to database successfully! <br><br> ⚠️ No teams found. Please add a row inside your Supabase "teams" table to unlock the matrix display.</td></tr>';
+                    return;
+                }
+
+                calculatedTeams.forEach(t => {
+                    let displayPar = t.relativeToPar === 0 ? 'E' : t.relativeToPar > 0 ? `+${t.relativeToPar}` : t.relativeToPar;
+                    let strokeColor = t.relativeToPar < 0 ? '#dc2626' : t.relativeToPar > 0 ? '#334155' : '#166534';
+                    let warningIndicator = (t.thru > 12 && (t.usedA < 6 || t.usedB < 6)) ? ' ⚠️' : '';
+
+                    let tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td class="td-bold">${t.name}</td>
+                        <td class="td-bold" style="color: ${strokeColor}">${displayPar}</td>
+                        <td>${t.thru}</td>
+                        <td style="font-size: 13px; color: var(--text-sub);">${t.usedA} / ${t.usedB}${warningIndicator}</td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            } catch (windowError) {
+                document.getElementById('leaderboard-body').innerHTML = `
+                    <tr><td colspan="4" style="text-align:center; color:#991b1b; padding:20px; background:#fee2e2;">
+                        CRITICAL APP CRASH: ${windowError.message}
+                    </td></tr>`;
             }
-
-            calculatedTeams.forEach(t => {
-                let displayPar = t.relativeToPar === 0 ? 'E' : t.relativeToPar > 0 ? `+${t.relativeToPar}` : t.relativeToPar;
-                let strokeColor = t.relativeToPar < 0 ? '#dc2626' : t.relativeToPar > 0 ? '#334155' : '#166534';
-                let warningIndicator = (t.thru > 12 && (t.usedA < 6 || t.usedB < 6)) ? ' ⚠️' : '';
-
-                let tr = document.createElement('tr');
-                tr.innerHTML = `
-                    <td class="td-bold">${t.name}</td>
-                    <td class="td-bold" style="color: ${strokeColor}">${displayPar}</td>
-                    <td>${t.thru}</td>
-                    <td style="font-size: 13px; color: var(--text-sub);">${t.usedA} / ${t.usedB}${warningIndicator}</td>
-                `;
-                tbody.appendChild(tr);
-            });
         }
 
         // Score Transmitter Pipeline
@@ -400,12 +432,16 @@ const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
         // Supabase Postgres Real-Time Change Web-Socket Connection
         function initRealtimeSync() {
-            supabase
-                .channel('public-scores-changes')
-                .on('postgres_changes', { event: '*', schema: 'public', table: 'scores' }, () => {
-                    fetchAndCalculateLeaderboard();
-                })
-                .subscribe();
+            try {
+                supabase
+                    .channel('public-scores-changes')
+                    .on('postgres_changes', { event: '*', schema: 'public', table: 'scores' }, () => {
+                        fetchAndCalculateLeaderboard();
+                    })
+                    .subscribe();
+            } catch(e) {
+                console.log("Realtime sync channel initialization failure, fallback to navigation manual polling", e);
+            }
         }
 
         // Basic Service Worker initialization framework
