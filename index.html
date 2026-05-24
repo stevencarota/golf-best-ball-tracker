@@ -5,293 +5,118 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Live Golf Best Ball Tracker</title>
     
-    <link rel="manifest" href="manifest.json">
-    <link rel="apple-touch-icon" href="icon-192.png">
-    <meta name="theme-color" content="#1e3a8a">
-
     <style>
-        :root {
-            --primary: #1e3a8a;
-            --primary-light: #eff6ff;
-            --text-main: #1e293b;
-            --text-sub: #64748b;
-            --bg: #f8fafc;
-            --card-bg: #ffffff;
-            --border: #cbd5e1;
-        }
-
-        body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background-color: var(--bg); color: var(--text-main); min-height: 100vh; padding: 12px; box-sizing: border-box; display: flex; flex-direction: column; align-items: center; }
-        .container { width: 100%; max-width: 450px; }
-        
-        nav { display: flex; justify-content: space-around; background-color: var(--card-bg); border-radius: 12px; padding: 6px; margin-bottom: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
-        .nav-btn { border: none; background: none; padding: 12px 24px; font-size: 15px; cursor: pointer; color: var(--text-sub); border-bottom: 3px solid transparent; font-weight: 500; }
-        .nav-btn.active { color: var(--primary); border-bottom-color: var(--primary); font-weight: 700; }
-
-        .view-title { font-size: 20px; color: var(--primary); margin: 4px 0 16px 0; text-align: center; font-weight: 700; }
-        .card { background-color: var(--card-bg); padding: 20px; border-radius: 16px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); box-sizing: border-box; }
+        :root { --primary: #1e3a8a; --primary-light: #eff6ff; --text-main: #1e293b; --bg: #f8fafc; --card-bg: #ffffff; --border: #cbd5e1; }
+        body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background-color: var(--bg); padding: 12px; }
+        .container { max-width: 450px; margin: 0 auto; }
+        .nav { display: flex; justify-content: space-around; background: var(--card-bg); border-radius: 12px; padding: 6px; margin-bottom: 16px; }
+        .nav-btn { border: none; background: none; padding: 12px; cursor: pointer; color: #64748b; font-weight: 500; }
+        .nav-btn.active { color: var(--primary); font-weight: 700; border-bottom: 2px solid var(--primary); }
+        .card { background: var(--card-bg); padding: 20px; border-radius: 16px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
         .hidden { display: none !important; }
-
-        .input-group { margin-bottom: 16px; }
-        label { display: block; font-size: 13px; font-weight: 600; color: #475569; margin-bottom: 6px; }
-        select { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--border); font-size: 16px; background-color: #fff; box-sizing: border-box; }
         
-        .stepper { display: flex; align-items: center; justify-content: space-between; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; background-color: #fff; }
-        .step-btn { width: 64px; height: 48px; font-size: 24px; border: none; background-color: #f1f5f9; color: var(--text-main); cursor: pointer; }
-        .step-val { font-size: 22px; font-weight: 700; color: var(--primary); }
+        .hole-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .hole-nav-btn { background: var(--primary-light); border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; }
         
-        .submit-btn { width: 100%; padding: 14px; background-color: var(--primary); color: #fff; font-size: 16px; font-weight: bold; border: none; border-radius: 8px; cursor: pointer; margin-top: 12px; }
-        .submit-btn:disabled { opacity: 0.5; }
-
-        .table-wrapper { background-color: var(--card-bg); border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
-        table { width: 100%; border-collapse: collapse; text-align: left; }
-        th { background-color: #f1f5f9; padding: 12px; font-size: 13px; font-weight: 600; color: #475569; }
-        tr { border-bottom: 1px solid #e2e8f0; }
-        td { padding: 14px 12px; font-size: 15px; }
-        .td-bold { font-weight: 700; color: #1e293b; }
-        .alert { padding: 12px; border-radius: 8px; font-size: 14px; font-weight: 500; margin-bottom: 16px; text-align: center; }
+        .score-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; padding: 10px; background: #f1f5f9; border-radius: 8px; }
+        .submit-btn { width: 100%; padding: 16px; background: var(--primary); color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; }
     </style>
 </head>
 <body>
 
-    <div class="container">
-        <nav>
-            <button id="tab-leaderboard" class="nav-btn active" onclick="window.switchView('leaderboard')">📊 Leaderboard</button>
-            <button id="tab-entry" class="nav-btn" onclick="window.switchView('entry')">✏️ Enter Scores</button>
-        </nav>
+<div class="container">
+    <div class="nav">
+        <button id="tab-leaderboard" class="nav-btn active" onclick="window.switchView('leaderboard')">📊 Leaderboard</button>
+        <button id="tab-entry" class="nav-btn" onclick="window.switchView('entry')">✏️ Enter Scores</button>
+    </div>
 
-        <div id="view-leaderboard">
-            <h2 class="view-title">Live Leaderboard</h2>
-            <div class="table-wrapper">
-                <table>
-                    <thead>
-                        <tr><th>Team</th><th>Par</th><th>Thru</th><th>Used A/B</th></tr>
-                    </thead>
-                    <tbody id="leaderboard-body">
-                        <tr><td colspan="4" style="text-align:center; color:var(--text-sub);" id="loading-message">Compiling matrix data...</td></tr>
-                    </tbody>
-                </table>
+    <div id="view-leaderboard"><div class="card" id="leaderboard-body">Loading...</div></div>
+
+    <div id="view-entry" class="hidden">
+        <div class="card">
+            <div id="team-selector-box">
+                <label>Select Your Team</label>
+                <select id="select-team" onchange="window.initTeamSession()" style="width:100%; padding:10px; margin-bottom:20px;"></select>
             </div>
-        </div>
 
-        <div id="view-entry" class="hidden">
-            <div class="card">
-                <h2 class="view-title">Submit Hole Score</h2>
-                <div id="form-alert" class="alert hidden"></div>
+            <div id="score-entry-box" class="hidden">
+                <div class="hole-header">
+                    <button class="hole-nav-btn" onclick="window.changeHole(-1)">←</button>
+                    <h2 id="current-hole-display">Hole 1 (Par 4)</h2>
+                    <button class="hole-nav-btn" onclick="window.changeHole(1)">→</button>
+                </div>
                 
-                <form id="score-form" onsubmit="window.handleScoreSubmit(event)">
-                    <div class="input-group">
-                        <label>Team Selection</label>
-                        <select id="select-team" onchange="window.filterPlayersDropdown()"></select>
-                    </div>
-                    <div class="input-group">
-                        <label>Player Name</label>
-                        <select id="select-player" disabled><option value="">-- Select Team First --</option></select>
-                    </div>
-                    <div class="input-group">
-                        <label>Hole Number</label>
-                        <select id="select-hole"></select>
-                    </div>
-                    <div class="input-group">
-                        <label>Total Strokes</label>
-                        <div class="stepper">
-                            <button type="button" class="step-btn" onclick="window.adjustStrokes(-1)">-</button>
-                            <span id="strokes-display" class="step-val">4</span>
-                            <button type="button" class="step-btn" onclick="window.adjustStrokes(1)">+</button>
-                        </div>
-                    </div>
-                    <button type="submit" id="btn-submit" class="submit-btn">Submit Score</button>
-                </form>
+                <div id="player-inputs"></div>
+                <button class="submit-btn" onclick="window.submitAllScores()">Save Hole Scores</button>
+                <p style="text-align:center; margin-top:10px; cursor:pointer; color:var(--text-sub);" onclick="window.resetTeam()">Change Team</p>
             </div>
         </div>
     </div>
+</div>
 
-    <script type="module">
-        // 1. ASSASSINATE OLD SERVICE WORKERS (Cache Busting)
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.getRegistrations().then(function(registrations) {
-                for(let r of registrations) { r.unregister(); }
-            });
-        }
+<script type="module">
+    import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+    const dbClient = createClient("https://gnsqewjsxveezexpitky.supabase.co", "sb_publishable_cVHE5Ju2PWvsvZmdW3lINQ_SjIgP2kD");
 
-        // 2. NATIVE MODULE IMPORT (Bypasses window.supabase collisions entirely)
-        import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+    let currentTeamId = null;
+    let currentHole = 1;
+    let teamPlayers = [];
 
-        const DB_URL = "https://gnsqewjsxveezexpitky.supabase.co"; 
-        const DB_KEY = "sb_publishable_cVHE5Ju2PWvsvZmdW3lINQ_SjIgP2kD";
-        const dbClient = createClient(DB_URL, DB_KEY);
+    window.switchView = (v) => {
+        document.getElementById('view-leaderboard').classList.toggle('hidden', v !== 'leaderboard');
+        document.getElementById('view-entry').classList.toggle('hidden', v !== 'entry');
+    };
 
-        let globalTeams = [];
-        let globalPlayers = [];
-        let currentStrokesValue = 4;
+    window.initTeamSession = async () => {
+        currentTeamId = document.getElementById('select-team').value;
+        if(!currentTeamId) return;
+        
+        const { data } = await dbClient.from('players').select('*').eq('team_id', currentTeamId);
+        teamPlayers = data;
+        
+        document.getElementById('team-selector-box').classList.add('hidden');
+        document.getElementById('score-entry-box').classList.remove('hidden');
+        renderInputs();
+    };
 
-        // 3. EXPOSE FUNCTIONS TO HTML BUTTONS
-        window.switchView = function(target) {
-            document.getElementById('view-leaderboard').classList.toggle('hidden', target !== 'leaderboard');
-            document.getElementById('view-entry').classList.toggle('hidden', target !== 'entry');
-            document.getElementById('tab-leaderboard').classList.toggle('active', target === 'leaderboard');
-            document.getElementById('tab-entry').classList.toggle('active', target === 'entry');
-            if (target === 'leaderboard') fetchAndCalculateLeaderboard();
-        };
+    window.resetTeam = () => {
+        currentTeamId = null;
+        document.getElementById('team-selector-box').classList.remove('hidden');
+        document.getElementById('score-entry-box').classList.add('hidden');
+    };
 
-        window.adjustStrokes = function(amount) {
-            currentStrokesValue = Math.max(1, currentStrokesValue + amount);
-            document.getElementById('strokes-display').textContent = currentStrokesValue;
-        };
+    window.changeHole = (dir) => {
+        currentHole = Math.max(1, Math.min(18, currentHole + dir));
+        document.getElementById('current-hole-display').textContent = `Hole ${currentHole} (Par 4)`;
+        renderInputs();
+    };
 
-        window.filterPlayersDropdown = function() {
-            const teamId = document.getElementById('select-team').value;
-            const selectPlayer = document.getElementById('select-player');
-            if(!selectPlayer) return;
-            selectPlayer.innerHTML = '<option value="">-- Select Player --</option>';
-            
-            if(!teamId) { selectPlayer.disabled = true; return; }
+    function renderInputs() {
+        const container = document.getElementById('player-inputs');
+        container.innerHTML = teamPlayers.map(p => `
+            <div class="score-row">
+                <span>${p.player_name}</span>
+                <input type="number" id="score-${p.id}" value="4" style="width:50px; padding:8px;">
+            </div>
+        `).join('');
+    }
 
-            const filtered = globalPlayers.filter(p => p.team_id === teamId);
-            filtered.forEach(p => {
-                let opt = document.createElement('option');
-                opt.value = p.id; opt.textContent = p.player_name;
-                selectPlayer.appendChild(opt);
-            });
-            selectPlayer.disabled = false;
-        };
+    window.submitAllScores = async () => {
+        const updates = teamPlayers.map(p => ({
+            player_id: p.id,
+            hole_number: currentHole,
+            strokes: parseInt(document.getElementById(`score-${p.id}`).value)
+        }));
+        
+        await dbClient.from('scores').upsert(updates, { onConflict: 'player_id,hole_number' });
+        alert("Scores Saved!");
+        if(currentHole < 18) window.changeHole(1);
+    };
 
-        window.handleScoreSubmit = async function(e) {
-            e.preventDefault();
-            const player = document.getElementById('select-player').value;
-            const hole = document.getElementById('select-hole').value;
-            const submitBtn = document.getElementById('btn-submit');
-            const alertBox = document.getElementById('form-alert');
-
-            if (!player || !hole) return;
-            submitBtn.disabled = true; alertBox.className = "alert hidden";
-
-            const { error } = await dbClient.from('scores').upsert(
-                { player_id: player, hole_number: parseInt(hole), strokes: parseInt(currentStrokesValue) }, 
-                { onConflict: 'player_id,hole_number' }
-            );
-
-            setTimeout(() => { submitBtn.disabled = false; }, 500);
-
-            if (error) {
-                alertBox.textContent = "Error: " + error.message;
-                alertBox.style.backgroundColor = "#fee2e2"; alertBox.style.color = "#991b1b";
-            } else {
-                alertBox.textContent = `Score of ${currentStrokesValue} saved for Hole ${hole}! ✅`;
-                alertBox.style.backgroundColor = "#dcfce7"; alertBox.style.color = "#166534";
-                const nextHole = parseInt(hole) + 1;
-                if(nextHole <= 18) {
-                    document.getElementById('select-hole').value = nextHole;
-                    currentStrokesValue = 4;
-                    document.getElementById('strokes-display').textContent = 4;
-                }
-            }
-            alertBox.classList.remove('hidden');
-        };
-
-        // 4. CORE ENGINE LOGIC
-        function initFormHoles() {
-            const selectHole = document.getElementById('select-hole');
-            selectHole.innerHTML = '';
-            for(let i=1; i<=18; i++) {
-                let opt = document.createElement('option');
-                opt.value = i; opt.textContent = `Hole ${i} (Par 4)`;
-                selectHole.appendChild(opt);
-            }
-        }
-
-        async function fetchDatabaseBasics() {
-            const resTeams = await dbClient.from('teams').select('*').order('team_name');
-            const resPlayers = await dbClient.from('players').select('*').order('player_name');
-            
-            if (resTeams.error || resPlayers.error) {
-                document.getElementById('loading-message').innerText = "Structure Load Error. Check Supabase permissions.";
-                return;
-            }
-
-            globalTeams = resTeams.data || [];
-            globalPlayers = resPlayers.data || [];
-
-            const selectTeam = document.getElementById('select-team');
-            selectTeam.innerHTML = '<option value="">-- Select Team --</option>';
-            globalTeams.forEach(t => {
-                let opt = document.createElement('option');
-                opt.value = t.id; opt.textContent = t.team_name;
-                selectTeam.appendChild(opt);
-            });
-        }
-
-        function runOptimizationEngine(holeScores) {
-            const activeHoles = holeScores.filter(h => h.player_a_strokes !== null || h.player_b_strokes !== null).length;
-            let bestScore = Infinity; let optimalACount = 0; let optimalBCount = 0;
-
-            function exploreBranch(idx, accumulatingStrokes, countA, countB) {
-                if (accumulatingStrokes >= bestScore) return;
-                if (idx === holeScores.length) {
-                    const holesLeft = 18 - activeHoles;
-                    if (activeHoles === 18 && (countA < 6 || countB < 6)) return;
-                    if ((countA + holesLeft) < 6 || (countB + holesLeft) < 6) return;
-                    if (accumulatingStrokes < bestScore) { bestScore = accumulatingStrokes; optimalACount = countA; optimalBCount = countB; }
-                    return;
-                }
-                const currentHole = holeScores[idx];
-                if (currentHole.player_a_strokes === null && currentHole.player_b_strokes === null) { exploreBranch(idx + 1, accumulatingStrokes, countA, countB); return; }
-                if (currentHole.player_a_strokes !== null) { exploreBranch(idx + 1, accumulatingStrokes + currentHole.player_a_strokes, countA + 1, countB); }
-                if (currentHole.player_b_strokes !== null) { exploreBranch(idx + 1, accumulatingStrokes + currentHole.player_b_strokes, countA, countB + 1); }
-            }
-
-            exploreBranch(0, 0, 0, 0);
-
-            const totalParAccumulated = holeScores.reduce((sum, h) => sum + (h.player_a_strokes !== null || h.player_b_strokes !== null ? h.par : 0), 0);
-            return {
-                totalStrokes: bestScore === Infinity ? 0 : bestScore,
-                relativeToPar: bestScore === Infinity ? 0 : bestScore - totalParAccumulated,
-                thru: activeHoles, usedA: optimalACount, usedB: optimalBCount
-            };
-        }
-
-        async function fetchAndCalculateLeaderboard() {
-            try {
-                const { data: matrix, error } = await dbClient.from('team_hole_scores_matrix').select('*');
-                const tbody = document.getElementById('leaderboard-body');
-                
-                if (error) {
-                    tbody.innerHTML = `<tr><td colspan='4' style='text-align:center; color:#dc2626; padding:20px; background:#fee2e2;'>ERROR: ${error.message}</td></tr>`;
-                    return;
-                }
-
-                if (!matrix || matrix.length === 0) {
-                    tbody.innerHTML = "<tr><td colspan='4' style='text-align:center; padding:20px; color:var(--text-sub);'>Database Connected! No scores entered yet.</td></tr>";
-                    return;
-                }
-
-                const groupedData = matrix.reduce((acc, row) => {
-                    if (!acc[row.team_id]) acc[row.team_id] = { name: row.team_name, scores: [] };
-                    acc[row.team_id].scores.push(row); return acc;
-                }, {});
-
-                const calculatedTeams = Object.keys(groupedData).map(tId => {
-                    return { id: tId, name: groupedData[tId].name, ...runOptimizationEngine(groupedData[tId].scores) };
-                }).sort((x, y) => x.relativeToPar - y.relativeToPar);
-
-                tbody.innerHTML = '';
-                calculatedTeams.forEach(t => {
-                    let displayPar = t.relativeToPar === 0 ? 'E' : t.relativeToPar > 0 ? `+${t.relativeToPar}` : t.relativeToPar;
-                    let strokeColor = t.relativeToPar < 0 ? '#dc2626' : t.relativeToPar > 0 ? '#334155' : '#166534';
-                    let tr = document.createElement('tr');
-                    tr.innerHTML = `<td class='td-bold'>${t.name}</td><td class='td-bold' style='color: ${strokeColor}'>${displayPar}</td><td>${t.thru}</td><td style='font-size: 13px; color: var(--text-sub);'>${t.usedA} / ${t.usedB}</td>`;
-                    tbody.appendChild(tr);
-                });
-            } catch (err) {
-                document.getElementById('leaderboard-body').innerHTML = `<tr><td colspan='4' style='text-align:center; color:#dc2626;'>CRASH: ${err.message}</td></tr>`;
-            }
-        }
-
-        // 5. START APP
-        initFormHoles();
-        fetchDatabaseBasics().then(() => {
-            fetchAndCalculateLeaderboard();
-            dbClient.channel('public-scores-changes').on('postgres_changes', { event: '*', schema: 'public', table: 'scores' }, fetchAndCalculateLeaderboard).subscribe();
-        });
-    </script>
+    // Load initial team list
+    const { data: teams } = await dbClient.from('teams').select('*');
+    document.getElementById('select-team').innerHTML = '<option value="">-- Choose Team --</option>' + 
+        teams.map(t => `<option value="${t.id}">${t.team_name}</option>`).join('');
+</script>
 </body>
 </html>
