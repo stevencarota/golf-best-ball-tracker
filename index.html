@@ -9,7 +9,7 @@
     <link rel="apple-touch-icon" href="icon-192.png">
     <meta name="theme-color" content="#1e3a8a">
 
-    <!-- Load the official Supabase Browser client library from a CDN -->
+    <!-- Load the official Supabase Client Library safely -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
     <style>
@@ -41,7 +41,6 @@
             max-width: 450px;
         }
 
-        /* Tab Navigation */
         nav {
             display: flex;
             justify-content: space-around;
@@ -69,7 +68,6 @@
             font-weight: 700;
         }
 
-        /* Common Layout UI */
         .view-title {
             font-size: 20px;
             color: var(--primary);
@@ -88,12 +86,10 @@
 
         .hidden { display: none !important; }
 
-        /* Form Styling */
         .input-group { margin-bottom: 16px; }
         label { display: block; font-size: 13px; font-weight: 600; color: #475569; margin-bottom: 6px; }
         select { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--border); font-size: 16px; background-color: #fff; box-sizing: border-box; }
         
-        /* Stepper +/- Layout */
         .stepper { display: flex; align-items: center; justify-content: space-between; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; background-color: #fff; }
         .step-btn { width: 64px; height: 48px; font-size: 24px; border: none; background-color: #f1f5f9; color: var(--text-main); cursor: pointer; }
         .step-val { font-size: 22px; font-weight: 700; color: var(--primary); }
@@ -101,7 +97,6 @@
         .submit-btn { width: 100%; padding: 14px; background-color: var(--primary); color: #fff; font-size: 16px; font-weight: bold; border: none; border-radius: 8px; cursor: pointer; margin-top: 12px; }
         .submit-btn:disabled { opacity: 0.5; }
 
-        /* Table Design */
         .table-wrapper { background-color: var(--card-bg); border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
         table { width: 100%; border-collapse: collapse; text-align: left; }
         th { background-color: #f1f5f9; padding: 12px; font-size: 13px; font-weight: 600; color: #475569; }
@@ -114,7 +109,6 @@
 <body>
 
     <div class="container">
-        <!-- Navigation Menu -->
         <nav>
             <button id="tab-leaderboard" class="nav-btn active" onclick="switchView('leaderboard')">📊 Leaderboard</button>
             <button id="tab-entry" class="nav-btn" onclick="switchView('entry')">✏️ Enter Scores</button>
@@ -134,13 +128,13 @@
                         </tr>
                     </thead>
                     <tbody id="leaderboard-body">
-                        <tr><td colspan="4" style="text-align:center; color:var(--text-sub);">Loading leaderboard matrix...</td></tr>
+                        <tr><td colspan="4" style="text-align:center; color:var(--text-sub);" id="loading-message">Loading leaderboard matrix...</td></tr>
                     </tbody>
                 </table>
             </div>
         </div>
 
-        <!-- VIEW 2: MOBILE SCORE ENTRY PANEL -->
+        <!-- VIEW 2: SCORE ENTRY -->
         <div id="view-entry" class="hidden">
             <div class="card">
                 <h2 class="view-title">Submit Hole Score</h2>
@@ -174,26 +168,21 @@
     </div>
 
     <script>
-        // ==========================================
-        // 🔑 DATABASE CONNECTION CONFIGURATION
-        // ==========================================
-        const SUPABASE_URL = "https://gnsqewjsxveezexpitky.supabase.co"; 
-        const SUPABASE_ANON_KEY = "sb_publishable_cVHE5Ju2PWvsvZmdW3lINQ_SjIgP2kD";
+        // Direct Client Setup Global Assignment
+        const DB_URL = "https://gnsqewjsxveezexpitky.supabase.co"; 
+        const DB_KEY = "sb_publishable_cVHE5Ju2PWvsvZmdW3lINQ_SjIgP2kD";
         
-        // Safety check to ensure the library loaded correctly before initializing
         let supabase;
         try {
-            supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-        } catch (e) {
-            console.error("Failed to initialize Supabase client library: ", e);
+            supabase = window.supabase.createClient(DB_URL, DB_KEY);
+        } catch (setupError) {
+            alert("Supabase Client Initialization Crash: " + setupError.message);
         }
 
-        // Core App Cache Storage
         let globalTeams = [];
         let globalPlayers = [];
         let currentStrokesValue = 4;
 
-        // Startup Routine
         window.addEventListener('DOMContentLoaded', async () => {
             initFormHoles();
             await fetchDatabaseBasics();
@@ -201,7 +190,6 @@
             initRealtimeSync();
         });
 
-        // 🔄 View Switching Controller
         function switchView(target) {
             document.getElementById('view-leaderboard').classList.toggle('hidden', target !== 'leaderboard');
             document.getElementById('view-entry').classList.toggle('hidden', target !== 'entry');
@@ -210,32 +198,34 @@
             if (target === 'leaderboard') fetchAndCalculateLeaderboard();
         }
 
-        // Dropdown Generation Rules
         function initFormHoles() {
             const selectHole = document.getElementById('select-hole');
+            if (!selectHole) return;
+            selectHole.innerHTML = '';
             for(let i=1; i<=18; i++) {
                 let opt = document.createElement('option');
                 opt.value = i;
-                opt.textContent = `Hole ${i} (Par 4)`;
+                opt.textContent = "Hole " + i + " (Par 4)";
                 selectHole.appendChild(opt);
             }
         }
 
-        // Basic Info Extractor
         async function fetchDatabaseBasics() {
             try {
-                const { data: teamsData, error: tErr } = await supabase.from('teams').select('*').order('team_name');
-                const { data: playersData, error: pErr } = await supabase.from('players').select('*').order('player_name');
+                const resTeams = await supabase.from('teams').select('*').order('team_name');
+                const resPlayers = await supabase.from('players').select('*').order('player_name');
                 
-                if (tErr || pErr) {
-                    console.error("Error loading structural database details", tErr, pErr);
+                if (resTeams.error || resPlayers.error) {
+                    const errMsg = (resTeams.error?.message || '') + " " + (resPlayers.error?.message || '');
+                    document.getElementById('loading-message').innerText = "Structure Load Error: " + errMsg;
                     return;
                 }
 
-                globalTeams = teamsData || [];
-                globalPlayers = playersData || [];
+                globalTeams = resTeams.data || [];
+                globalPlayers = resPlayers.data || [];
 
                 const selectTeam = document.getElementById('select-team');
+                if(!selectTeam) return;
                 selectTeam.innerHTML = '<option value="">-- Select Team --</option>';
                 globalTeams.forEach(t => {
                     let opt = document.createElement('option');
@@ -244,14 +234,14 @@
                     selectTeam.appendChild(opt);
                 });
             } catch (err) {
-                console.error("Network communication blocked fetching teams list", err);
+                document.getElementById('loading-message').innerText = "Structural network error: " + err.message;
             }
         }
 
-        // Sub-filter for player listings
         function filterPlayersDropdown() {
             const teamId = document.getElementById('select-team').value;
             const selectPlayer = document.getElementById('select-player');
+            if(!selectPlayer) return;
             selectPlayer.innerHTML = '<option value="">-- Select Player --</option>';
             
             if(!teamId) {
@@ -269,15 +259,11 @@
             selectPlayer.disabled = false;
         }
 
-        // Stepper Functionality
         function adjustStrokes(amount) {
             currentStrokesValue = Math.max(1, currentStrokesValue + amount);
             document.getElementById('strokes-display').textContent = currentStrokesValue;
         }
 
-        // ==========================================
-        // 🧮 GOLF TEAM AUTO-OPTIMIZATION SYSTEM
-        // ==========================================
         function runOptimizationEngine(holeScores, targetContribution = 6) {
             const activeHoles = holeScores.filter(h => h.player_a_strokes !== null || h.player_b_strokes !== null).length;
             let bestScore = Infinity;
@@ -328,21 +314,25 @@
             };
         }
 
-        // Leaderboard Generation & Matrix Rendering (With Mobile Screen Error Trapping)
         async function fetchAndCalculateLeaderboard() {
             try {
                 const { data: matrix, error } = await supabase.from('team_hole_scores_matrix').select('*');
                 
                 if (error) {
-                    // Prints direct configuration issues straight to the viewport
-                    document.getElementById('leaderboard-body').innerHTML = `
-                        <tr><td colspan="4" style="text-align:center; color:#dc2626; font-weight:bold; padding:20px; background:#fee2e2; border-radius:8px;">
-                            DATABASE ERROR: ${error.message} <br> Code: ${error.code}
-                        </td></tr>`;
+                    document.getElementById('leaderboard-body').innerHTML = 
+                        "<tr><td colspan='4' style='text-align:center; color:#dc2626; font-weight:bold; padding:20px; background:#fee2e2; border-radius:8px;'>" +
+                        "DATABASE ERROR: " + error.message + " <br> Code: " + error.code +
+                        "</td></tr>";
                     return;
                 }
 
-                if (!matrix) return;
+                const tbody = document.getElementById('leaderboard-body');
+                if (!tbody) return;
+
+                if (!matrix || matrix.length === 0) {
+                    tbody.innerHTML = "<tr><td colspan='4' style='text-align:center; padding:20px; color:var(--text-sub);'>Connected successfully! <br><br> ⚠️ Matrix view returned zero scores. Check your team_hole_scores_matrix view configuration in Supabase.</td></tr>";
+                    return;
+                }
 
                 const groupedData = matrix.reduce((acc, row) => {
                     if (!acc[row.team_id]) acc[row.team_id] = { name: row.team_name, scores: [] };
@@ -357,38 +347,27 @@
                 });
 
                 calculatedTeams.sort((x, y) => x.relativeToPar - y.relativeToPar);
-
-                const tbody = document.getElementById('leaderboard-body');
                 tbody.innerHTML = '';
 
-                if(calculatedTeams.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:20px; color:var(--text-sub);">Connected to database successfully! <br><br> ⚠️ No teams found. Please add a row inside your Supabase "teams" table to unlock the matrix display.</td></tr>';
-                    return;
-                }
-
                 calculatedTeams.forEach(t => {
-                    let displayPar = t.relativeToPar === 0 ? 'E' : t.relativeToPar > 0 ? `+${t.relativeToPar}` : t.relativeToPar;
+                    let displayPar = t.relativeToPar === 0 ? 'E' : t.relativeToPar > 0 ? "+" + t.relativeToPar : t.relativeToPar;
                     let strokeColor = t.relativeToPar < 0 ? '#dc2626' : t.relativeToPar > 0 ? '#334155' : '#166534';
                     let warningIndicator = (t.thru > 12 && (t.usedA < 6 || t.usedB < 6)) ? ' ⚠️' : '';
 
                     let tr = document.createElement('tr');
-                    tr.innerHTML = `
-                        <td class="td-bold">${t.name}</td>
-                        <td class="td-bold" style="color: ${strokeColor}">${displayPar}</td>
-                        <td>${t.thru}</td>
-                        <td style="font-size: 13px; color: var(--text-sub);">${t.usedA} / ${t.usedB}${warningIndicator}</td>
-                    `;
+                    tr.innerHTML = 
+                        "<td class='td-bold'>" + t.name + "</td>" +
+                        "<td class='td-bold' style='color: " + strokeColor + "'>" + displayPar + "</td>" +
+                        "<td>" + t.thru + "</td>" +
+                        "<td style='font-size: 13px; color: var(--text-sub);'>" + t.usedA + " / " + t.usedB + warningIndicator + "</td>";
                     tbody.appendChild(tr);
                 });
             } catch (windowError) {
-                document.getElementById('leaderboard-body').innerHTML = `
-                    <tr><td colspan="4" style="text-align:center; color:#991b1b; padding:20px; background:#fee2e2;">
-                        CRITICAL APP CRASH: ${windowError.message}
-                    </td></tr>`;
+                document.getElementById('leaderboard-body').innerHTML = 
+                    "<tr><td colspan='4' style='text-align:center; color:#991b1b; padding:20px; background:#fee2e2;'>CRITICAL ENGINE CRASH: " + windowError.message + "</td></tr>";
             }
         }
 
-        // Score Transmitter Pipeline
         async function handleScoreSubmit(e) {
             e.preventDefault();
             const player = document.getElementById('select-player').value;
@@ -415,12 +394,11 @@
                 alertBox.style.color = "#991b1b";
                 alertBox.classList.remove('hidden');
             } else {
-                alertBox.textContent = `Score of ${currentStrokesValue} saved for Hole ${hole}! ✅`;
+                alertBox.textContent = "Score of " + currentStrokesValue + " saved for Hole " + hole + "! ✅";
                 alertBox.style.backgroundColor = "#dcfce7";
                 alertBox.style.color = "#166534";
                 alertBox.classList.remove('hidden');
 
-                // Shift to the next hole automatically
                 const nextHole = parseInt(hole) + 1;
                 if(nextHole <= 18) {
                     document.getElementById('select-hole').value = nextHole;
@@ -430,7 +408,6 @@
             }
         }
 
-        // Supabase Postgres Real-Time Change Web-Socket Connection
         function initRealtimeSync() {
             try {
                 supabase
@@ -440,15 +417,8 @@
                     })
                     .subscribe();
             } catch(e) {
-                console.log("Realtime sync channel initialization failure, fallback to navigation manual polling", e);
+                console.log("Realtime fallback", e);
             }
-        }
-
-        // Basic Service Worker initialization framework
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/sw.js').catch(err => console.log(err));
-            });
         }
     </script>
 </body>
