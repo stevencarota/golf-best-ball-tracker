@@ -168,9 +168,11 @@
         const DB_URL = "https://gnsqewjsxveezexpitky.supabase.co"; 
         const DB_KEY = "sb_publishable_cVHE5Ju2PWvsvZmdW3lINQ_SjIgP2kD";
         
+        // Correct destructured syntax for Supabase script tags
         let dbClient;
         try {
-            dbClient = window.supabase.createClient(DB_URL, DB_KEY);
+            const createClient = window.supabase.createClient;
+            dbClient = createClient(DB_URL, DB_KEY);
         } catch (setupError) {
             alert("Supabase Client Initialization Crash: " + setupError.message);
         }
@@ -179,7 +181,6 @@
         let globalPlayers = [];
         let currentStrokesValue = 4;
 
-        // Standard function definitions first to make absolutely sure they compile
         function switchView(target) {
             document.getElementById('view-leaderboard').classList.toggle('hidden', target !== 'leaderboard');
             document.getElementById('view-entry').classList.toggle('hidden', target !== 'entry');
@@ -393,4 +394,38 @@
                 alertBox.classList.remove('hidden');
             } else {
                 alertBox.textContent = "Score of " + currentStrokesValue + " saved for Hole " + hole + "! ✅";
-                alertBox.style.backgroundColor = "#dcfce
+                alertBox.style.backgroundColor = "#dcfce7";
+                alertBox.style.color = "#166534";
+                alertBox.classList.remove('hidden');
+
+                const nextHole = parseInt(hole) + 1;
+                if(nextHole <= 18) {
+                    document.getElementById('select-hole').value = nextHole;
+                    currentStrokesValue = 4;
+                    document.getElementById('strokes-display').textContent = 4;
+                }
+            }
+        }
+
+        function initRealtimeSync() {
+            try {
+                dbClient
+                    .channel('public-scores-changes')
+                    .on('postgres_changes', { event: '*', schema: 'public', table: 'scores' }, function() {
+                        fetchAndCalculateLeaderboard();
+                    })
+                    .subscribe();
+            } catch(e) {
+                console.log("Realtime fallback", e);
+            }
+        }
+
+        // Run startup routines smoothly
+        window.addEventListener('load', function() {
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.register('/sw.js').catch(function(err) { console.log(err); });
+            }
+        });
+    </script>
+</body>
+</html>
