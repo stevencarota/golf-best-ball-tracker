@@ -1,0 +1,862 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>ROCK HARD CUP</title>
+
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="icon-192.png">
+
+    <meta name="theme-color" content="#050505">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --rhf-lime: #A6D608;
+            --rhf-black: #050505;
+            --rhf-charcoal: #141414;
+            --rhf-card: #101010;
+            --rhf-white: #EDEDED;
+            --rhf-gray: #7A7A7A;
+            --rhf-silver: #BFC0C2;
+            --rhf-red: #E53935;
+            --rhf-gold: #D4AF37;
+
+            --primary: var(--rhf-lime);
+            --primary-light: rgba(166,214,8,0.12);
+            --text-main: var(--rhf-white);
+            --text-sub: #9ca3af;
+            --bg: var(--rhf-black);
+            --card-bg: var(--rhf-card);
+            --border: rgba(166,214,8,0.15);
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: 'Inter', sans-serif;
+            background:
+                radial-gradient(circle at top, rgba(166,214,8,0.06), transparent 40%),
+                linear-gradient(to bottom, #0a0a0a, #050505);
+            background-color: var(--bg);
+            color: var(--text-main);
+            min-height: 100vh;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            letter-spacing: 0.2px;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background-image:
+                linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
+            background-size: 4px 4px;
+            opacity: 0.25;
+            pointer-events: none;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 480px;
+            position: relative;
+            z-index: 2;
+        }
+
+        .hero-banner {
+            margin-bottom: 18px;
+            padding: 24px 20px;
+            border-radius: 20px;
+            background:
+                linear-gradient(135deg, rgba(166,214,8,0.14), rgba(0,0,0,0.8)),
+                #111;
+            border: 1px solid rgba(166,214,8,0.15);
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 12px 30px rgba(0,0,0,0.7);
+        }
+
+        .hero-title {
+            font-size: 52px;
+            line-height: 0.95;
+            color: var(--primary);
+            font-family: 'Bebas Neue', sans-serif;
+            letter-spacing: 2px;
+            text-shadow: 0 0 20px rgba(166,214,8,0.35);
+        }
+
+        .hero-sub {
+            margin-top: 8px;
+            color: var(--rhf-white);
+            font-size: 14px;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        nav {
+            display: flex;
+            width: 100%;
+            justify-content: space-around;
+            background: rgba(20,20,20,0.92);
+            border-radius: 18px;
+            padding: 8px;
+            margin-bottom: 22px;
+            border: 1px solid rgba(166,214,8,0.12);
+            box-shadow:
+                0 0 0 1px rgba(166,214,8,0.08),
+                0 10px 30px rgba(0,0,0,0.65);
+            backdrop-filter: blur(8px);
+        }
+
+        .nav-btn {
+            border: none;
+            background: transparent;
+            padding: 12px 14px;
+            font-size: 15px;
+            cursor: pointer;
+            color: var(--text-sub);
+            border-bottom: 3px solid transparent;
+            font-family: 'Bebas Neue', sans-serif;
+            letter-spacing: 1px;
+            transition: all 0.2s ease;
+        }
+
+        .nav-btn.active {
+            color: var(--primary);
+            border-bottom-color: var(--primary);
+            text-shadow: 0 0 12px rgba(166,214,8,0.4);
+        }
+
+        .view-title {
+            font-size: 42px;
+            color: var(--primary);
+            margin: 6px 0 18px 0;
+            text-align: center;
+            font-family: 'Bebas Neue', sans-serif;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            text-shadow:
+                0 0 8px rgba(166,214,8,0.45),
+                0 0 30px rgba(166,214,8,0.15);
+        }
+
+        .card,
+        .table-wrapper {
+            background:
+                linear-gradient(to bottom, rgba(255,255,255,0.02), rgba(255,255,255,0.01)),
+                var(--card-bg);
+            border-radius: 18px;
+            overflow: hidden;
+            border: 1px solid rgba(166,214,8,0.12);
+            box-shadow:
+                0 0 0 1px rgba(166,214,8,0.06),
+                0 12px 30px rgba(0,0,0,0.7);
+            position: relative;
+        }
+
+        .card::before,
+        .table-wrapper::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            opacity: 0.05;
+            background-image:
+                linear-gradient(45deg, transparent 25%, rgba(255,255,255,0.03) 25%, rgba(255,255,255,0.03) 50%, transparent 50%, transparent 75%, rgba(255,255,255,0.03) 75%);
+            background-size: 6px 6px;
+            pointer-events: none;
+        }
+
+        .card {
+            padding: 22px;
+            width: 100%;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th {
+            background: rgba(166,214,8,0.08);
+            padding: 14px 12px;
+            font-size: 13px;
+            font-family: 'Bebas Neue', sans-serif;
+            letter-spacing: 1px;
+            color: var(--primary);
+            text-transform: uppercase;
+        }
+
+        tr {
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+
+        td {
+            padding: 16px 12px;
+            font-size: 15px;
+            color: var(--rhf-white);
+        }
+
+        .td-bold {
+            font-weight: 800;
+            color: var(--rhf-white);
+        }
+
+        .team-row {
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .team-row:hover {
+            background: rgba(166,214,8,0.08);
+            transform: scale(1.01);
+        }
+
+        .leader-first {
+            background: rgba(212,175,55,0.08);
+            border-left: 4px solid var(--rhf-gold);
+        }
+
+        .leader-top {
+            border-left: 4px solid var(--primary);
+        }
+
+        .leader-first .td-bold {
+            color: var(--rhf-gold);
+        }
+
+        .sub-row {
+            background: rgba(255,255,255,0.02);
+        }
+
+        .sub-row td {
+            color: #cbd5e1;
+            font-size: 14px;
+        }
+
+        .chevron {
+            display: inline-block;
+            width: 18px;
+            transition: transform 0.2s;
+            color: var(--primary);
+        }
+
+        .scorecard-table th,
+        .scorecard-table td {
+            text-align: center;
+            padding: 14px 8px;
+        }
+
+        .scorecard-table th:first-child,
+        .scorecard-table td:first-child {
+            text-align: left;
+            padding-left: 16px;
+            font-weight: bold;
+            width: 25%;
+        }
+
+        .score-circle {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            transition: all 0.2s;
+            background: rgba(255,255,255,0.03);
+        }
+
+        .score-used {
+            font-weight: 800;
+            border: 2px solid var(--primary);
+            color: var(--primary);
+            background: rgba(166,214,8,0.12);
+            box-shadow: 0 0 14px rgba(166,214,8,0.3);
+        }
+
+        label {
+            display: block;
+            font-size: 13px;
+            font-family: 'Bebas Neue', sans-serif;
+            letter-spacing: 1px;
+            color: var(--primary);
+            margin-bottom: 10px;
+        }
+
+        select {
+            width: 100%;
+            padding: 14px;
+            border-radius: 12px;
+            border: 1px solid rgba(166,214,8,0.15);
+            font-size: 16px;
+            background: #0c0c0c;
+            color: white;
+        }
+
+        .hole-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 22px;
+            background: rgba(166,214,8,0.08);
+            padding: 10px 14px;
+            border-radius: 14px;
+            border: 1px solid rgba(166,214,8,0.12);
+        }
+
+        .hole-nav-btn {
+            background: var(--primary);
+            color: black;
+            border: none;
+            width: 48px;
+            height: 48px;
+            font-size: 20px;
+            font-weight: bold;
+            border-radius: 12px;
+            cursor: pointer;
+        }
+
+        #current-hole-display {
+            font-size: 24px;
+            font-family: 'Bebas Neue', sans-serif;
+            color: var(--primary);
+            letter-spacing: 1px;
+        }
+
+        .player-score-block {
+            margin-bottom: 18px;
+            padding: 18px;
+            background: rgba(255,255,255,0.02);
+            border: 1px solid rgba(166,214,8,0.08);
+            border-radius: 16px;
+        }
+
+        .player-name-label {
+            font-size: 20px;
+            font-family: 'Bebas Neue', sans-serif;
+            color: var(--rhf-white);
+            margin-bottom: 12px;
+            letter-spacing: 1px;
+        }
+
+        .stepper {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border: 1px solid rgba(166,214,8,0.15);
+            border-radius: 14px;
+            overflow: hidden;
+            background: #0c0c0c;
+        }
+
+        .step-btn {
+            width: 74px;
+            height: 58px;
+            font-size: 30px;
+            border: none;
+            background: rgba(166,214,8,0.1);
+            color: var(--primary);
+            cursor: pointer;
+            font-weight: 800;
+        }
+
+        .step-val {
+            font-size: 34px;
+            font-weight: 800;
+            color: var(--primary);
+            font-family: 'Bebas Neue', sans-serif;
+            letter-spacing: 1px;
+        }
+
+        .submit-btn {
+            width: 100%;
+            padding: 18px;
+            background: var(--primary);
+            color: black;
+            font-size: 22px;
+            font-family: 'Bebas Neue', sans-serif;
+            letter-spacing: 1px;
+            border: none;
+            border-radius: 14px;
+            cursor: pointer;
+            margin-top: 12px;
+            box-shadow: 0 0 20px rgba(166,214,8,0.25);
+        }
+
+        .alert {
+            padding: 14px;
+            border-radius: 12px;
+            font-size: 14px;
+            font-weight: 700;
+            margin-bottom: 18px;
+            text-align: center;
+        }
+
+        .change-team-lnk {
+            text-align: center;
+            margin-top: 18px;
+            color: var(--text-sub);
+            font-size: 14px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+
+    <div class="hero-banner">
+        <div class="hero-title">ROCK HARD CUP</div>
+        <div class="hero-sub">Golf. Fish. Compete. Dominate.</div>
+    </div>
+
+    <nav>
+        <button id="tab-leaderboard" class="nav-btn active" onclick="window.switchView('leaderboard')">WARBOARD</button>
+        <button id="tab-scorecards" class="nav-btn" onclick="window.switchView('scorecards')">CARDS</button>
+        <button id="tab-entry" class="nav-btn" onclick="window.switchView('entry')">ENTER</button>
+    </nav>
+
+    <div id="view-leaderboard">
+        <h2 class="view-title">LIVE WARBOARD</h2>
+
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Team</th>
+                        <th>Par</th>
+                        <th>Thru</th>
+                        <th>Used</th>
+                    </tr>
+                </thead>
+
+                <tbody id="leaderboard-body">
+                    <tr>
+                        <td colspan="4" style="text-align:center; color:var(--text-sub); padding:30px;">
+                            INITIALIZING WARBOARD...
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div id="view-scorecards" class="hidden">
+        <h2 class="view-title">TEAM CARDS</h2>
+
+        <div class="card" style="margin-bottom:16px;">
+            <label>Select Team</label>
+            <select id="select-scorecard-team" onchange="window.renderScorecard()"></select>
+        </div>
+
+        <div id="scorecard-container" class="table-wrapper hidden"></div>
+    </div>
+
+    <div id="view-entry" class="hidden">
+        <div class="card">
+            <h2 class="view-title">ENTER DAMAGE</h2>
+
+            <div id="form-alert" class="alert hidden"></div>
+
+            <div id="team-selector-box">
+                <label>Select Your Team</label>
+                <select id="select-team" onchange="window.initTeamSession()"></select>
+            </div>
+
+            <div id="score-entry-box" class="hidden">
+
+                <div class="hole-header">
+                    <button type="button" id="btn-prev-hole" class="hole-nav-btn" onclick="window.changeHole(-1)" disabled>←</button>
+                    <span id="current-hole-display">Hole 1</span>
+                    <button type="button" id="btn-next-hole" class="hole-nav-btn" onclick="window.changeHole(1)">→</button>
+                </div>
+
+                <div id="player-inputs-container"></div>
+
+                <button type="button" id="btn-submit" class="submit-btn" onclick="window.submitAllScores()">
+                    SAVE SCORES
+                </button>
+
+                <div class="change-team-lnk" onclick="window.resetTeam()">
+                    ← SWITCH TEAM
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<script type="module">
+
+window.globalCalculatedTeams = {};
+
+window.switchView = function(target) {
+    document.getElementById('view-leaderboard').classList.add('hidden');
+    document.getElementById('view-scorecards').classList.add('hidden');
+    document.getElementById('view-entry').classList.add('hidden');
+
+    document.getElementById('tab-leaderboard').classList.remove('active');
+    document.getElementById('tab-scorecards').classList.remove('active');
+    document.getElementById('tab-entry').classList.remove('active');
+
+    document.getElementById('view-' + target).classList.remove('hidden');
+    document.getElementById('tab-' + target).classList.add('active');
+
+    if (target === 'leaderboard' && window.fetchAndCalculateLeaderboard) {
+        window.fetchAndCalculateLeaderboard();
+    } else if (target === 'scorecards') {
+        window.renderScorecard();
+    }
+};
+
+window.toggleSubRows = function(teamId) {
+    const rows = document.querySelectorAll('.sub-' + teamId);
+    const icon = document.getElementById('icon-' + teamId);
+
+    let isHidden = false;
+
+    rows.forEach(function(r) {
+        if (r.classList.contains('hidden')) {
+            isHidden = true;
+            r.classList.remove('hidden');
+        } else {
+            r.classList.add('hidden');
+        }
+    });
+
+    if (icon) {
+        icon.style.transform = isHidden ? 'rotate(90deg)' : 'rotate(0deg)';
+    }
+};
+
+window.initTeamSession = function() {
+    currentTeamId = document.getElementById('select-team').value;
+
+    if (!currentTeamId) return;
+
+    sessionPlayers = globalPlayers.filter(function(p) {
+        return p.team_id === currentTeamId;
+    });
+
+    document.getElementById('team-selector-box').classList.add('hidden');
+    document.getElementById('score-entry-box').classList.remove('hidden');
+
+    sessionPlayers.forEach(function(p) {
+        inputScoresState[p.id] = 4;
+    });
+
+    renderDualPlayerInputs();
+};
+
+window.resetTeam = function() {
+    currentTeamId = null;
+
+    document.getElementById('select-team').value = "";
+
+    document.getElementById('team-selector-box').classList.remove('hidden');
+    document.getElementById('score-entry-box').classList.add('hidden');
+
+    document.getElementById('form-alert').className = "alert hidden";
+};
+
+window.changeHole = function(direction) {
+    currentHole = Math.max(1, Math.min(18, currentHole + direction));
+
+    document.getElementById('current-hole-display').textContent =
+        'Hole ' + currentHole + ' (Par 4)';
+
+    document.getElementById('btn-prev-hole').disabled = (currentHole === 1);
+    document.getElementById('btn-next-hole').disabled = (currentHole === 18);
+
+    sessionPlayers.forEach(function(p) {
+        inputScoresState[p.id] = 4;
+    });
+
+    renderDualPlayerInputs();
+};
+
+window.adjustPlayerStrokes = function(playerId, amount) {
+    inputScoresState[playerId] =
+        Math.max(1, (inputScoresState[playerId] || 4) + amount);
+
+    document.getElementById('display-' + playerId).textContent =
+        inputScoresState[playerId];
+};
+
+function renderDualPlayerInputs() {
+
+    const container = document.getElementById('player-inputs-container');
+
+    container.innerHTML = '';
+
+    sessionPlayers.forEach(function(p) {
+
+        const block = document.createElement('div');
+
+        block.className = 'player-score-block';
+
+        block.innerHTML = `
+            <div class="player-name-label">${p.player_name}</div>
+
+            <div class="stepper">
+                <button
+                    type="button"
+                    class="step-btn"
+                    onclick="window.adjustPlayerStrokes('${p.id}', -1)"
+                >-</button>
+
+                <span id="display-${p.id}" class="step-val">
+                    ${inputScoresState[p.id]}
+                </span>
+
+                <button
+                    type="button"
+                    class="step-btn"
+                    onclick="window.adjustPlayerStrokes('${p.id}', 1)"
+                >+</button>
+            </div>
+        `;
+
+        container.appendChild(block);
+    });
+}
+
+window.submitAllScores = async function() {
+
+    const submitBtn = document.getElementById('btn-submit');
+    const alertBox = document.getElementById('form-alert');
+
+    submitBtn.disabled = true;
+
+    alertBox.className = "alert hidden";
+
+    const batchPayload = sessionPlayers.map(function(p) {
+        return {
+            player_id: p.id,
+            hole_number: parseInt(currentHole),
+            strokes: parseInt(inputScoresState[p.id])
+        };
+    });
+
+    try {
+
+        const { error } = await dbClient
+            .from('scores')
+            .upsert(batchPayload, {
+                onConflict: 'player_id,hole_number'
+            });
+
+        if (error) throw error;
+
+        alertBox.textContent =
+            'HOLE ' + currentHole + ' LOCKED IN 🔥';
+
+        alertBox.style.backgroundColor = "rgba(166,214,8,0.15)";
+        alertBox.style.color = "#A6D608";
+
+        if (currentHole < 18) {
+
+            setTimeout(function() {
+
+                window.changeHole(1);
+
+                alertBox.className = "alert hidden";
+
+            }, 800);
+        }
+
+    } catch (err) {
+
+        alertBox.textContent = "CRASH: " + err.message;
+
+        alertBox.style.backgroundColor = "rgba(229,57,53,0.15)";
+        alertBox.style.color = "#E53935";
+
+    } finally {
+
+        setTimeout(function() {
+            submitBtn.disabled = false;
+        }, 400);
+
+        alertBox.classList.remove('hidden');
+    }
+};
+
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+
+const DB_URL = "https://gnsqewjsxveezexpitky.supabase.co";
+
+const DB_KEY =
+"sb_publishable_cVHE5Ju2PWvsvZmdW3lINQ_SjIgP2kD";
+
+const dbClient = createClient(DB_URL, DB_KEY);
+
+let globalTeams = [];
+let globalPlayers = [];
+let currentTeamId = null;
+let currentHole = 1;
+let sessionPlayers = [];
+let inputScoresState = {};
+
+async function bootApp() {
+
+    try {
+
+        document.getElementById('leaderboard-body').innerHTML = `
+            <tr>
+                <td colspan="4"
+                    style="text-align:center; padding:30px;">
+                    INITIALIZING WARBOARD...
+                </td>
+            </tr>
+        `;
+
+        const resTeams =
+            await dbClient
+                .from('teams')
+                .select('*')
+                .order('team_name');
+
+        const resPlayers =
+            await dbClient
+                .from('players')
+                .select('*')
+                .order('player_name');
+
+        globalTeams = resTeams.data || [];
+        globalPlayers = resPlayers.data || [];
+
+        const selectTeam =
+            document.getElementById('select-team');
+
+        const selectCardTeam =
+            document.getElementById('select-scorecard-team');
+
+        selectTeam.innerHTML =
+            '<option value="">-- CHOOSE TEAM --</option>';
+
+        selectCardTeam.innerHTML =
+            '<option value="">-- CHOOSE TEAM --</option>';
+
+        globalTeams.forEach(function(t) {
+
+            let opt1 = document.createElement('option');
+
+            opt1.value = t.id;
+            opt1.textContent = t.team_name;
+
+            selectTeam.appendChild(opt1);
+
+            let opt2 = document.createElement('option');
+
+            opt2.value = t.id;
+            opt2.textContent = t.team_name;
+
+            selectCardTeam.appendChild(opt2);
+        });
+
+        await window.fetchAndCalculateLeaderboard();
+
+    } catch (err) {
+
+        console.error(err);
+
+    }
+}
+
+window.fetchAndCalculateLeaderboard = async function() {
+
+    const tbody = document.getElementById('leaderboard-body');
+
+    try {
+
+        const { data: matrix, error } =
+            await dbClient
+                .from('team_hole_scores_matrix')
+                .select('*');
+
+        if (error) throw error;
+
+        if (!matrix || matrix.length === 0) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan='4'
+                        style='text-align:center; padding:30px;'>
+                        WAITING FOR SAVAGES TO POST SCORES
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+
+        // Deduplicate: keep only the first row per team_name
+        const seen = new Set();
+        const deduped = matrix.filter(function(row) {
+            if (seen.has(row.team_name)) return false;
+            seen.add(row.team_name);
+            return true;
+        });
+
+        tbody.innerHTML = '';
+
+        deduped.forEach(function(row, index) {
+
+            let rankClass = '';
+            if (index === 0) {
+                rankClass = 'leader-first';
+            } else if (index < 5) {
+                rankClass = 'leader-top';
+            }
+
+            let tr = document.createElement('tr');
+            tr.className = `team-row ${rankClass}`;
+            tr.innerHTML = `
+                <td class="td-bold">${row.team_name}</td>
+                <td class="td-bold">${row.relative_to_par || 'E'}</td>
+                <td>${row.thru || 0}</td>
+                <td>${row.used_a || 0}/${row.used_b || 0}</td>
+            `;
+            tbody.appendChild(tr);
+        });
+
+    } catch (err) {
+
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="4"
+                    style="text-align:center;
+                    padding:30px;
+                    color:#E53935;">
+                    WARBOARD FAILURE
+                </td>
+            </tr>
+        `;
+    }
+};
+
+window.renderScorecard = function() {
+    console.log('Scorecard rendering...');
+};
+
+bootApp();
+
+</script>
+</body>
+</html>
