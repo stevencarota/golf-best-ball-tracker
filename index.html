@@ -5,118 +5,230 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Live Golf Best Ball Tracker</title>
     
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="icon-192.png">
+    <meta name="theme-color" content="#1e3a8a">
+
     <style>
-        :root { --primary: #1e3a8a; --primary-light: #eff6ff; --text-main: #1e293b; --bg: #f8fafc; --card-bg: #ffffff; --border: #cbd5e1; }
-        body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background-color: var(--bg); padding: 12px; }
-        .container { max-width: 450px; margin: 0 auto; }
-        .nav { display: flex; justify-content: space-around; background: var(--card-bg); border-radius: 12px; padding: 6px; margin-bottom: 16px; }
-        .nav-btn { border: none; background: none; padding: 12px; cursor: pointer; color: #64748b; font-weight: 500; }
-        .nav-btn.active { color: var(--primary); font-weight: 700; border-bottom: 2px solid var(--primary); }
-        .card { background: var(--card-bg); padding: 20px; border-radius: 16px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+        :root {
+            --primary: #1e3a8a;
+            --primary-light: #eff6ff;
+            --text-main: #1e293b;
+            --text-sub: #64748b;
+            --bg: #f8fafc;
+            --card-bg: #ffffff;
+            --border: #cbd5e1;
+        }
+
+        body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background-color: var(--bg); color: var(--text-main); min-height: 100vh; padding: 12px; box-sizing: border-box; display: flex; flex-direction: column; align-items: center; }
+        .container { width: 100%; max-width: 450px; }
+        
+        nav { display: flex; width: 100%; justify-content: space-around; background-color: var(--card-bg); border-radius: 12px; padding: 6px; margin-bottom: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); box-sizing: border-box; }
+        .nav-btn { border: none; background: none; padding: 12px 24px; font-size: 15px; cursor: pointer; color: var(--text-sub); border-bottom: 3px solid transparent; font-weight: 500; }
+        .nav-btn.active { color: var(--primary); border-bottom-color: var(--primary); font-weight: 700; }
+
+        .view-title { font-size: 20px; color: var(--primary); margin: 4px 0 16px 0; text-align: center; font-weight: 700; }
+        .card { background-color: var(--card-bg); padding: 20px; border-radius: 16px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); box-sizing: border-box; width: 100%; }
         .hidden { display: none !important; }
+
+        /* LEADERBOARD TABLE STYLES */
+        .table-wrapper { background-color: var(--card-bg); border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
+        table { width: 100%; border-collapse: collapse; text-align: left; }
+        th { background-color: #f1f5f9; padding: 12px; font-size: 13px; font-weight: 600; color: #475569; }
+        tr { border-bottom: 1px solid #e2e8f0; }
+        td { padding: 14px 12px; font-size: 15px; }
+        .td-bold { font-weight: 700; color: #1e293b; }
         
-        .hole-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-        .hole-nav-btn { background: var(--primary-light); border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; }
+        .team-row { cursor: pointer; transition: background-color 0.2s; }
+        .team-row:hover { background-color: var(--primary-light); }
+        .sub-row { background-color: #f8fafc; }
+        .sub-row td { padding: 10px 12px; font-size: 14px; border-top: 1px solid #f1f5f9; color: #475569; }
+        .chevron { display: inline-block; width: 18px; font-size: 11px; transition: transform 0.2s; color: var(--primary); text-align: center; }
+
+        /* RE-ENGINEERED ENTRY PANEL STYLES */
+        label { display: block; font-size: 14px; font-weight: 600; color: #475569; margin-bottom: 8px; }
+        select { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--border); font-size: 16px; background-color: #fff; box-sizing: border-box; }
         
-        .score-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; padding: 10px; background: #f1f5f9; border-radius: 8px; }
-        .submit-btn { width: 100%; padding: 16px; background: var(--primary); color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; }
+        .hole-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; background: #f1f5f9; padding: 6px 12px; border-radius: 10px; }
+        .hole-nav-btn { background: var(--primary); color: white; border: none; padding: 10px 18px; font-size: 16px; font-weight: bold; border-radius: 8px; cursor: pointer; }
+        .hole-nav-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+        #current-hole-display { font-size: 17px; font-weight: 700; color: var(--primary); margin: 0; }
+        
+        .player-score-block { margin-bottom: 18px; padding: 14px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; }
+        .player-name-label { font-size: 15px; font-weight: 700; color: var(--text-main); margin-bottom: 8px; }
+        
+        .stepper { display: flex; align-items: center; justify-content: space-between; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; background-color: #fff; }
+        .step-btn { width: 64px; height: 44px; font-size: 22px; border: none; background-color: #f1f5f9; color: var(--text-main); cursor: pointer; }
+        .step-val { font-size: 20px; font-weight: 700; color: var(--primary); }
+        
+        .submit-btn { width: 100%; padding: 16px; background-color: var(--primary); color: #fff; font-size: 16px; font-weight: bold; border: none; border-radius: 8px; cursor: pointer; margin-top: 10px; }
+        .submit-btn:disabled { opacity: 0.5; }
+        .alert { padding: 12px; border-radius: 8px; font-size: 14px; font-weight: 500; margin-bottom: 16px; text-align: center; }
+        .change-team-lnk { text-align: center; margin-top: 16px; color: var(--text-sub); font-size: 14px; cursor: pointer; font-weight: 500; text-decoration: underline; }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <div class="nav">
-        <button id="tab-leaderboard" class="nav-btn active" onclick="window.switchView('leaderboard')">📊 Leaderboard</button>
-        <button id="tab-entry" class="nav-btn" onclick="window.switchView('entry')">✏️ Enter Scores</button>
-    </div>
+    <div class="container">
+        <nav>
+            <button id="tab-leaderboard" class="nav-btn active" onclick="window.switchView('leaderboard')">📊 Leaderboard</button>
+            <button id="tab-entry" class="nav-btn" onclick="window.switchView('entry')">✏️ Enter Scores</button>
+        </nav>
 
-    <div id="view-leaderboard"><div class="card" id="leaderboard-body">Loading...</div></div>
-
-    <div id="view-entry" class="hidden">
-        <div class="card">
-            <div id="team-selector-box">
-                <label>Select Your Team</label>
-                <select id="select-team" onchange="window.initTeamSession()" style="width:100%; padding:10px; margin-bottom:20px;"></select>
+        <div id="view-leaderboard">
+            <h2 class="view-title">Live Leaderboard</h2>
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr><th>Team</th><th>Par</th><th>Thru</th><th>Shots Used</th></tr>
+                    </thead>
+                    <tbody id="leaderboard-body">
+                        <tr><td colspan="4" style="text-align:center; color:var(--text-sub);" id="loading-message">Compiling matrix data...</td></tr>
+                    </tbody>
+                </table>
             </div>
+        </div>
 
-            <div id="score-entry-box" class="hidden">
-                <div class="hole-header">
-                    <button class="hole-nav-btn" onclick="window.changeHole(-1)">←</button>
-                    <h2 id="current-hole-display">Hole 1 (Par 4)</h2>
-                    <button class="hole-nav-btn" onclick="window.changeHole(1)">→</button>
+        <div id="view-entry" class="hidden">
+            <div class="card">
+                <h2 class="view-title">Submit Hole Scores</h2>
+                <div id="form-alert" class="alert hidden"></div>
+                
+                <div id="team-selector-box">
+                    <div class="input-group">
+                        <label>Select Your Team Focus</label>
+                        <select id="select-team" onchange="window.initTeamSession()"></select>
+                    </div>
                 </div>
                 
-                <div id="player-inputs"></div>
-                <button class="submit-btn" onclick="window.submitAllScores()">Save Hole Scores</button>
-                <p style="text-align:center; margin-top:10px; cursor:pointer; color:var(--text-sub);" onclick="window.resetTeam()">Change Team</p>
+                <div id="score-entry-box" class="hidden">
+                    <div class="hole-header">
+                        <button type="button" id="btn-prev-hole" class="hole-nav-btn" onclick="window.changeHole(-1)">←</button>
+                        <span id="current-hole-display">Hole 1 (Par 4)</span>
+                        <button type="button" id="btn-next-hole" class="hole-nav-btn" onclick="window.changeHole(1)">→</button>
+                    </div>
+                    
+                    <div id="player-inputs-container"></div>
+                    
+                    <button type="button" id="btn-submit" class="submit-btn" onclick="window.submitAllScores()">Save Hole Scores</button>
+                    <div class="change-team-lnk" onclick="window.resetTeam()">← Switch to Another Team</div>
+                </div>
             </div>
         </div>
     </div>
-</div>
 
-<script type="module">
-    import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
-    const dbClient = createClient("https://gnsqewjsxveezexpitky.supabase.co", "sb_publishable_cVHE5Ju2PWvsvZmdW3lINQ_SjIgP2kD");
+    <script type="module">
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.getRegistrations().then(function(registrations) {
+                for(let r of registrations) { r.unregister(); }
+            });
+        }
 
-    let currentTeamId = null;
-    let currentHole = 1;
-    let teamPlayers = [];
+        import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
 
-    window.switchView = (v) => {
-        document.getElementById('view-leaderboard').classList.toggle('hidden', v !== 'leaderboard');
-        document.getElementById('view-entry').classList.toggle('hidden', v !== 'entry');
-    };
+        const DB_URL = "https://gnsqewjsxveezexpitky.supabase.co"; 
+        const DB_KEY = "sb_publishable_cVHE5Ju2PWvsvZmdW3lINQ_SjIgP2kD";
+        const dbClient = createClient(DB_URL, DB_KEY);
 
-    window.initTeamSession = async () => {
-        currentTeamId = document.getElementById('select-team').value;
-        if(!currentTeamId) return;
+        let globalTeams = [];
+        let globalPlayers = [];
         
-        const { data } = await dbClient.from('players').select('*').eq('team_id', currentTeamId);
-        teamPlayers = data;
-        
-        document.getElementById('team-selector-box').classList.add('hidden');
-        document.getElementById('score-entry-box').classList.remove('hidden');
-        renderInputs();
-    };
+        // Session tracking states
+        let currentTeamId = null;
+        let currentHole = 1;
+        let sessionPlayers = [];
+        let inputScoresState = {}; // Keeps track of temporary stepper values dynamically
 
-    window.resetTeam = () => {
-        currentTeamId = null;
-        document.getElementById('team-selector-box').classList.remove('hidden');
-        document.getElementById('score-entry-box').classList.add('hidden');
-    };
+        // UI ARCHITECTURE VIEW TOGGLES
+        window.switchView = function(target) {
+            document.getElementById('view-leaderboard').classList.toggle('hidden', target !== 'leaderboard');
+            document.getElementById('view-entry').classList.toggle('hidden', target !== 'entry');
+            document.getElementById('tab-leaderboard').classList.toggle('active', target === 'leaderboard');
+            document.getElementById('tab-entry').classList.toggle('active', target === 'entry');
+            if (target === 'leaderboard') fetchAndCalculateLeaderboard();
+        };
 
-    window.changeHole = (dir) => {
-        currentHole = Math.max(1, Math.min(18, currentHole + dir));
-        document.getElementById('current-hole-display').textContent = `Hole ${currentHole} (Par 4)`;
-        renderInputs();
-    };
+        window.toggleSubRows = function(teamId) {
+            const rows = document.querySelectorAll(`.sub-${teamId}`);
+            const icon = document.getElementById(`icon-${teamId}`);
+            let isHidden = false;
+            
+            rows.forEach(r => {
+                if (r.classList.contains('hidden')) {
+                    isHidden = true;
+                    r.classList.remove('hidden');
+                } else {
+                    r.classList.add('hidden');
+                }
+            });
+            
+            if (icon) {
+                icon.style.transform = isHidden ? 'rotate(90deg)' : 'rotate(0deg)';
+            }
+        };
 
-    function renderInputs() {
-        const container = document.getElementById('player-inputs');
-        container.innerHTML = teamPlayers.map(p => `
-            <div class="score-row">
-                <span>${p.player_name}</span>
-                <input type="number" id="score-${p.id}" value="4" style="width:50px; padding:8px;">
-            </div>
-        `).join('');
-    }
+        // UI PERSISTENT SESSION HANDLERS
+        window.initTeamSession = function() {
+            currentTeamId = document.getElementById('select-team').value;
+            if(!currentTeamId) return;
 
-    window.submitAllScores = async () => {
-        const updates = teamPlayers.map(p => ({
-            player_id: p.id,
-            hole_number: currentHole,
-            strokes: parseInt(document.getElementById(`score-${p.id}`).value)
-        }));
-        
-        await dbClient.from('scores').upsert(updates, { onConflict: 'player_id,hole_number' });
-        alert("Scores Saved!");
-        if(currentHole < 18) window.changeHole(1);
-    };
+            sessionPlayers = globalPlayers.filter(p => p.team_id === currentTeamId);
+            
+            document.getElementById('team-selector-box').classList.add('hidden');
+            document.getElementById('score-entry-box').classList.remove('hidden');
+            
+            // Set basic starter strokes for both players
+            sessionPlayers.forEach(p => { inputScoresState[p.id] = 4; });
+            
+            renderDualPlayerInputs();
+        };
 
-    // Load initial team list
-    const { data: teams } = await dbClient.from('teams').select('*');
-    document.getElementById('select-team').innerHTML = '<option value="">-- Choose Team --</option>' + 
-        teams.map(t => `<option value="${t.id}">${t.team_name}</option>`).join('');
-</script>
-</body>
-</html>
+        window.resetTeam = function() {
+            currentTeamId = null;
+            document.getElementById('select-team').value = "";
+            document.getElementById('team-selector-box').classList.remove('hidden');
+            document.getElementById('score-entry-box').classList.add('hidden');
+            document.getElementById('form-alert').className = "alert hidden";
+        };
+
+        window.changeHole = function(direction) {
+            currentHole = Math.max(1, Math.min(18, currentHole + direction));
+            document.getElementById('current-hole-display').textContent = `Hole ${currentHole} (Par 4)`;
+            
+            document.getElementById('btn-prev-hole').disabled = (currentHole === 1);
+            document.getElementById('btn-next-hole').disabled = (currentHole === 18);
+            
+            // Re-default inputs to 4 when changing hole
+            sessionPlayers.forEach(p => { inputScoresState[p.id] = 4; });
+            renderDualPlayerInputs();
+        };
+
+        window.adjustPlayerStrokes = function(playerId, amount) {
+            inputScoresState[playerId] = Math.max(1, (inputScoresState[playerId] || 4) + amount);
+            document.getElementById(`display-${playerId}`).textContent = inputScoresState[playerId];
+        };
+
+        function renderDualPlayerInputs() {
+            const container = document.getElementById('player-inputs-container');
+            container.innerHTML = '';
+
+            sessionPlayers.forEach(p => {
+                const block = document.createElement('div');
+                block.className = 'player-score-block';
+                block.innerHTML = `
+                    <div class="player-name-label">${p.player_name}</div>
+                    <div class="stepper">
+                        <button type="button" class="step-btn" onclick="window.adjustPlayerStrokes('${p.id}', -1)">-</button>
+                        <span id="display-${p.id}" class="step-val">${inputScoresState[p.id]}</span>
+                        <button type="button" class="step-btn" onclick="window.adjustPlayerStrokes('${p.id}', 1)">+</button>
+                    </div>
+                `;
+                container.appendChild(block);
+            });
+        }
+
+        window.submitAllScores = async function() {
+            const submitBtn = document.getElementById('btn-submit');
+            const alertBox = document.getElementById('form-alert');
+            
+            submitBtn.
