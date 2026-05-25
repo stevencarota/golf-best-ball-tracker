@@ -10,16 +10,7 @@
     <meta name="theme-color" content="#1e3a8a">
 
     <style>
-        :root {
-            --primary: #1e3a8a;
-            --primary-light: #eff6ff;
-            --text-main: #1e293b;
-            --text-sub: #64748b;
-            --bg: #f8fafc;
-            --card-bg: #ffffff;
-            --border: #cbd5e1;
-        }
-
+        :root { --primary: #1e3a8a; --primary-light: #eff6ff; --text-main: #1e293b; --text-sub: #64748b; --bg: #f8fafc; --card-bg: #ffffff; --border: #cbd5e1; }
         body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background-color: var(--bg); color: var(--text-main); min-height: 100vh; padding: 12px; box-sizing: border-box; display: flex; flex-direction: column; align-items: center; }
         .container { width: 100%; max-width: 450px; }
         
@@ -31,7 +22,6 @@
         .card { background-color: var(--card-bg); padding: 20px; border-radius: 16px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); box-sizing: border-box; width: 100%; }
         .hidden { display: none !important; }
 
-        /* LEADERBOARD TABLE STYLES */
         .table-wrapper { background-color: var(--card-bg); border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
         table { width: 100%; border-collapse: collapse; text-align: left; }
         th { background-color: #f1f5f9; padding: 12px; font-size: 13px; font-weight: 600; color: #475569; }
@@ -45,7 +35,6 @@
         .sub-row td { padding: 10px 12px; font-size: 14px; border-top: 1px solid #f1f5f9; color: #475569; }
         .chevron { display: inline-block; width: 18px; font-size: 11px; transition: transform 0.2s; color: var(--primary); text-align: center; }
 
-        /* RE-ENGINEERED ENTRY PANEL STYLES */
         label { display: block; font-size: 14px; font-weight: 600; color: #475569; margin-bottom: 8px; }
         select { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--border); font-size: 16px; background-color: #fff; box-sizing: border-box; }
         
@@ -83,7 +72,7 @@
                         <tr><th>Team</th><th>Par</th><th>Thru</th><th>Shots Used</th></tr>
                     </thead>
                     <tbody id="leaderboard-body">
-                        <tr><td colspan="4" style="text-align:center; color:var(--text-sub);" id="loading-message">Compiling matrix data...</td></tr>
+                        <tr><td colspan="4" style="text-align:center; color:var(--text-sub);" id="loading-message">Booting up system...</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -103,7 +92,7 @@
                 
                 <div id="score-entry-box" class="hidden">
                     <div class="hole-header">
-                        <button type="button" id="btn-prev-hole" class="hole-nav-btn" onclick="window.changeHole(-1)">←</button>
+                        <button type="button" id="btn-prev-hole" class="hole-nav-btn" onclick="window.changeHole(-1)" disabled>←</button>
                         <span id="current-hole-display">Hole 1 (Par 4)</span>
                         <button type="button" id="btn-next-hole" class="hole-nav-btn" onclick="window.changeHole(1)">→</button>
                     </div>
@@ -118,42 +107,22 @@
     </div>
 
     <script type="module">
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.getRegistrations().then(function(registrations) {
-                for(let r of registrations) { r.unregister(); }
-            });
-        }
-
-        import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
-
-        const DB_URL = "https://gnsqewjsxveezexpitky.supabase.co"; 
-        const DB_KEY = "sb_publishable_cVHE5Ju2PWvsvZmdW3lINQ_SjIgP2kD";
-        const dbClient = createClient(DB_URL, DB_KEY);
-
-        let globalTeams = [];
-        let globalPlayers = [];
-        
-        // Session tracking states
-        let currentTeamId = null;
-        let currentHole = 1;
-        let sessionPlayers = [];
-        let inputScoresState = {}; // Keeps track of temporary stepper values dynamically
-
-        // UI ARCHITECTURE VIEW TOGGLES
+        // 1. BULLETPROOF UI BINDINGS (Always load first so the app never "freezes")
         window.switchView = function(target) {
             document.getElementById('view-leaderboard').classList.toggle('hidden', target !== 'leaderboard');
             document.getElementById('view-entry').classList.toggle('hidden', target !== 'entry');
             document.getElementById('tab-leaderboard').classList.toggle('active', target === 'leaderboard');
             document.getElementById('tab-entry').classList.toggle('active', target === 'entry');
-            if (target === 'leaderboard') fetchAndCalculateLeaderboard();
+            if (target === 'leaderboard' && window.fetchAndCalculateLeaderboard) {
+                window.fetchAndCalculateLeaderboard();
+            }
         };
 
         window.toggleSubRows = function(teamId) {
-            const rows = document.querySelectorAll(`.sub-${teamId}`);
-            const icon = document.getElementById(`icon-${teamId}`);
+            const rows = document.querySelectorAll('.sub-' + teamId);
+            const icon = document.getElementById('icon-' + teamId);
             let isHidden = false;
-            
-            rows.forEach(r => {
+            rows.forEach(function(r) {
                 if (r.classList.contains('hidden')) {
                     isHidden = true;
                     r.classList.remove('hidden');
@@ -161,25 +130,20 @@
                     r.classList.add('hidden');
                 }
             });
-            
             if (icon) {
                 icon.style.transform = isHidden ? 'rotate(90deg)' : 'rotate(0deg)';
             }
         };
 
-        // UI PERSISTENT SESSION HANDLERS
         window.initTeamSession = function() {
             currentTeamId = document.getElementById('select-team').value;
-            if(!currentTeamId) return;
+            if (!currentTeamId) return;
 
-            sessionPlayers = globalPlayers.filter(p => p.team_id === currentTeamId);
-            
+            sessionPlayers = globalPlayers.filter(function(p) { return p.team_id === currentTeamId; });
             document.getElementById('team-selector-box').classList.add('hidden');
             document.getElementById('score-entry-box').classList.remove('hidden');
             
-            // Set basic starter strokes for both players
-            sessionPlayers.forEach(p => { inputScoresState[p.id] = 4; });
-            
+            sessionPlayers.forEach(function(p) { inputScoresState[p.id] = 4; });
             renderDualPlayerInputs();
         };
 
@@ -193,26 +157,23 @@
 
         window.changeHole = function(direction) {
             currentHole = Math.max(1, Math.min(18, currentHole + direction));
-            document.getElementById('current-hole-display').textContent = `Hole ${currentHole} (Par 4)`;
-            
+            document.getElementById('current-hole-display').textContent = 'Hole ' + currentHole + ' (Par 4)';
             document.getElementById('btn-prev-hole').disabled = (currentHole === 1);
             document.getElementById('btn-next-hole').disabled = (currentHole === 18);
             
-            // Re-default inputs to 4 when changing hole
-            sessionPlayers.forEach(p => { inputScoresState[p.id] = 4; });
+            sessionPlayers.forEach(function(p) { inputScoresState[p.id] = 4; });
             renderDualPlayerInputs();
         };
 
         window.adjustPlayerStrokes = function(playerId, amount) {
             inputScoresState[playerId] = Math.max(1, (inputScoresState[playerId] || 4) + amount);
-            document.getElementById(`display-${playerId}`).textContent = inputScoresState[playerId];
+            document.getElementById('display-' + playerId).textContent = inputScoresState[playerId];
         };
 
         function renderDualPlayerInputs() {
             const container = document.getElementById('player-inputs-container');
             container.innerHTML = '';
-
-            sessionPlayers.forEach(p => {
+            sessionPlayers.forEach(function(p) {
                 const block = document.createElement('div');
                 block.className = 'player-score-block';
                 block.innerHTML = `
@@ -231,4 +192,214 @@
             const submitBtn = document.getElementById('btn-submit');
             const alertBox = document.getElementById('form-alert');
             
-            submitBtn.
+            submitBtn.disabled = true;
+            alertBox.className = "alert hidden";
+
+            const batchPayload = sessionPlayers.map(function(p) {
+                return {
+                    player_id: p.id,
+                    hole_number: parseInt(currentHole),
+                    strokes: parseInt(inputScoresState[p.id])
+                };
+            });
+
+            try {
+                const { error } = await dbClient.from('scores').upsert(batchPayload, { onConflict: 'player_id,hole_number' });
+                if (error) throw error;
+
+                alertBox.textContent = 'Hole ' + currentHole + ' scores submitted successfully! ✅';
+                alertBox.style.backgroundColor = "#dcfce7"; 
+                alertBox.style.color = "#166534";
+                
+                if (currentHole < 18) {
+                    setTimeout(function() {
+                        window.changeHole(1);
+                        alertBox.className = "alert hidden";
+                    }, 800);
+                }
+            } catch (err) {
+                alertBox.textContent = "Error: " + err.message;
+                alertBox.style.backgroundColor = "#fee2e2"; 
+                alertBox.style.color = "#991b1b";
+            } finally {
+                setTimeout(function() { submitBtn.disabled = false; }, 400);
+                alertBox.classList.remove('hidden');
+            }
+        };
+
+        // 2. CACHE ASSASSIN
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.getRegistrations().then(function(registrations) {
+                for(let i = 0; i < registrations.length; i++) { registrations[i].unregister(); }
+            });
+        }
+
+        // 3. DATABASE SETUP
+        import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+        const DB_URL = "https://gnsqewjsxveezexpitky.supabase.co"; 
+        const DB_KEY = "sb_publishable_cVHE5Ju2PWvsvZmdW3lINQ_SjIgP2kD";
+        const dbClient = createClient(DB_URL, DB_KEY);
+
+        let globalTeams = [];
+        let globalPlayers = [];
+        let currentTeamId = null;
+        let currentHole = 1;
+        let sessionPlayers = [];
+        let inputScoresState = {}; 
+
+        // 4. CORE ENGINES
+        function runOptimizationEngine(holeScores) {
+            const activeHoles = holeScores.filter(function(h) { return h.player_a_strokes !== null || h.player_b_strokes !== null; }).length;
+            let bestScore = Infinity; let optimalACount = 0; let optimalBCount = 0;
+
+            function exploreBranch(idx, accumulatingStrokes, countA, countB) {
+                if (accumulatingStrokes >= bestScore) return;
+                if (idx === holeScores.length) {
+                    const holesLeft = 18 - activeHoles;
+                    if (activeHoles === 18 && (countA < 6 || countB < 6)) return;
+                    if ((countA + holesLeft) < 6 || (countB + holesLeft) < 6) return;
+                    if (accumulatingStrokes < bestScore) { bestScore = accumulatingStrokes; optimalACount = countA; optimalBCount = countB; }
+                    return;
+                }
+                const currentHole = holeScores[idx];
+                if (currentHole.player_a_strokes === null && currentHole.player_b_strokes === null) { exploreBranch(idx + 1, accumulatingStrokes, countA, countB); return; }
+                if (currentHole.player_a_strokes !== null) { exploreBranch(idx + 1, accumulatingStrokes + currentHole.player_a_strokes, countA + 1, countB); }
+                if (currentHole.player_b_strokes !== null) { exploreBranch(idx + 1, accumulatingStrokes + currentHole.player_b_strokes, countA, countB + 1); }
+            }
+
+            exploreBranch(0, 0, 0, 0);
+
+            const totalParAccumulated = holeScores.reduce(function(sum, h) {
+                return sum + (h.player_a_strokes !== null || h.player_b_strokes !== null ? h.par : 0);
+            }, 0);
+
+            return {
+                totalStrokes: bestScore === Infinity ? 0 : bestScore,
+                relativeToPar: bestScore === Infinity ? 0 : bestScore - totalParAccumulated,
+                thru: activeHoles, usedA: optimalACount, usedB: optimalBCount
+            };
+        }
+
+        window.fetchAndCalculateLeaderboard = async function() {
+            const tbody = document.getElementById('leaderboard-body');
+            try {
+                const { data: matrix, error } = await dbClient.from('team_hole_scores_matrix').select('*');
+                if (error) throw error;
+
+                if (!matrix || matrix.length === 0) {
+                    tbody.innerHTML = "<tr><td colspan='4' style='text-align:center; padding:20px; color:var(--text-sub);'>Ready for Scores!</td></tr>";
+                    return;
+                }
+
+                const groupedData = matrix.reduce(function(acc, row) {
+                    if (!acc[row.team_id]) acc[row.team_id] = { name: row.team_name, scores: [] };
+                    acc[row.team_id].scores.push(row);
+                    return acc;
+                }, {});
+
+                const calculatedTeams = Object.keys(groupedData).map(function(tId) {
+                    const teamData = groupedData[tId];
+                    const engineData = runOptimizationEngine(teamData.scores);
+                    return Object.assign({}, { id: tId, name: teamData.name, scores: teamData.scores }, engineData);
+                }).sort(function(x, y) { return x.relativeToPar - y.relativeToPar; });
+
+                tbody.innerHTML = '';
+                
+                calculatedTeams.forEach(function(t) {
+                    const teamMembers = globalPlayers.filter(function(p) { return p.team_id === t.id; });
+                    const playerA = (teamMembers[0] && teamMembers[0].player_name) ? teamMembers[0].player_name : 'Player A';
+                    const playerB = (teamMembers[1] && teamMembers[1].player_name) ? teamMembers[1].player_name : 'Player B';
+                    const pAShort = playerA.split(' ')[0] || 'P1';
+                    const pBShort = playerB.split(' ')[0] || 'P2';
+
+                    let aStrokes = 0, aParTotal = 0, aThru = 0;
+                    let bStrokes = 0, bParTotal = 0, bThru = 0;
+
+                    t.scores.forEach(function(h) {
+                        if (h.player_a_strokes !== null) { aStrokes += h.player_a_strokes; aParTotal += h.par; aThru++; }
+                        if (h.player_b_strokes !== null) { bStrokes += h.player_b_strokes; bParTotal += h.par; bThru++; }
+                    });
+
+                    let aRel = aStrokes - aParTotal;
+                    let bRel = bStrokes - bParTotal;
+                    
+                    let formatRel = function(rel) { return rel === 0 ? 'E' : (rel > 0 ? '+' + rel : rel); };
+                    let colorRel = function(rel) { return rel < 0 ? '#dc2626' : (rel > 0 ? '#334155' : '#166534'); };
+
+                    let displayPar = t.relativeToPar === 0 ? 'E' : (t.relativeToPar > 0 ? '+' + t.relativeToPar : t.relativeToPar);
+                    let strokeColor = t.relativeToPar < 0 ? '#dc2626' : (t.relativeToPar > 0 ? '#334155' : '#166534');
+                    
+                    let tr = document.createElement('tr');
+                    tr.className = 'team-row';
+                    tr.onclick = function() { window.toggleSubRows(t.id); };
+                    tr.innerHTML = `
+                        <td class='td-bold'><span id="icon-${t.id}" class="chevron">▶</span> ${t.name}</td>
+                        <td class='td-bold' style='color: ${strokeColor}'>${displayPar}</td>
+                        <td>${t.thru}</td>
+                        <td style='font-size: 13px; color: var(--text-sub); line-height: 1.4;'>
+                            <strong>${pAShort}</strong>: ${t.usedA}<br>
+                            <strong>${pBShort}</strong>: ${t.usedB}
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+
+                    let trA = document.createElement('tr');
+                    trA.className = 'sub-row sub-' + t.id + ' hidden';
+                    trA.innerHTML = `
+                        <td style="padding-left: 32px;">↳ ${playerA}</td>
+                        <td class='td-bold' style='color: ${colorRel(aRel)}'>${formatRel(aRel)}</td>
+                        <td>${aThru}</td>
+                        <td>Used: ${t.usedA}</td>
+                    `;
+                    tbody.appendChild(trA);
+
+                    let trB = document.createElement('tr');
+                    trB.className = 'sub-row sub-' + t.id + ' hidden';
+                    trB.innerHTML = `
+                        <td style="padding-left: 32px;">↳ ${playerB}</td>
+                        <td class='td-bold' style='color: ${colorRel(bRel)}'>${formatRel(bRel)}</td>
+                        <td>${bThru}</td>
+                        <td>Used: ${t.usedB}</td>
+                    `;
+                    tbody.appendChild(trB);
+                });
+            } catch (err) {
+                tbody.innerHTML = `<tr><td colspan='4' style='text-align:center; color:#dc2626; padding:20px; font-weight:bold;'>CRASH: ${err.message}</td></tr>`;
+            }
+        };
+
+        async function bootApp() {
+            try {
+                document.getElementById('loading-message').innerText = "Connecting to Database...";
+                const resTeams = await dbClient.from('teams').select('*').order('team_name');
+                const resPlayers = await dbClient.from('players').select('*').order('player_name');
+                
+                if (resTeams.error) throw resTeams.error;
+                if (resPlayers.error) throw resPlayers.error;
+
+                globalTeams = resTeams.data || [];
+                globalPlayers = resPlayers.data || [];
+
+                const selectTeam = document.getElementById('select-team');
+                selectTeam.innerHTML = '<option value="">-- Choose Team Focus --</option>';
+                globalTeams.forEach(function(t) {
+                    let opt = document.createElement('option');
+                    opt.value = t.id; opt.textContent = t.team_name;
+                    selectTeam.appendChild(opt);
+                });
+
+                await window.fetchAndCalculateLeaderboard();
+                
+                dbClient.channel('public-scores-changes').on('postgres_changes', { event: '*', schema: 'public', table: 'scores' }, window.fetchAndCalculateLeaderboard).subscribe();
+
+            } catch (err) {
+                document.getElementById('loading-message').innerText = "INIT ERROR: " + err.message;
+                document.getElementById('loading-message').style.color = "#dc2626";
+            }
+        }
+
+        // 5. IGNITION
+        bootApp();
+    </script>
+</body>
+</html>
