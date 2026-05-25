@@ -1,0 +1,786 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>rHf x SL - 2026 Championship</title>
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="icon-192.png">
+    <meta name="theme-color" content="#050505">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --rhf-lime: #A6D608;
+            --rhf-black: #050505;
+            --rhf-charcoal: #141414;
+            --rhf-card: #101010;
+            --rhf-white: #EDEDED;
+            --rhf-gray: #7A7A7A;
+            --rhf-silver: #BFC0C2;
+            --rhf-red: #E53935;
+            --rhf-gold: #D4AF37;
+            --primary: var(--rhf-lime);
+            --primary-light: rgba(166,214,8,0.12);
+            --text-main: var(--rhf-white);
+            --text-sub: #9ca3af;
+            --bg: var(--rhf-black);
+            --card-bg: var(--rhf-card);
+            --border: rgba(166,214,8,0.15);
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            font-family: 'Inter', sans-serif;
+            background:
+                radial-gradient(circle at top, rgba(166,214,8,0.06), transparent 40%),
+                linear-gradient(to bottom, #0a0a0a, #050505);
+            background-color: var(--bg);
+            color: var(--text-main);
+            min-height: 100vh;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            letter-spacing: 0.2px;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background-image:
+                linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
+            background-size: 4px 4px;
+            opacity: 0.25;
+            pointer-events: none;
+        }
+
+        .container { width: 100%; max-width: 480px; position: relative; z-index: 2; }
+
+        .hero-banner {
+            margin-bottom: 18px;
+            padding: 24px 20px;
+            border-radius: 20px;
+            background: linear-gradient(135deg, rgba(166,214,8,0.14), rgba(0,0,0,0.8)), #111;
+            border: 1px solid rgba(166,214,8,0.15);
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 12px 30px rgba(0,0,0,0.7);
+        }
+
+        .hero-title { font-size: 38px; line-height: 0.95; color: var(--primary); font-family: 'Bebas Neue', sans-serif; letter-spacing: 2px; text-shadow: 0 0 20px rgba(166,214,8,0.35); }
+        .hero-sub { margin-top: 8px; color: var(--rhf-white); font-size: 14px; letter-spacing: 1px; text-transform: uppercase; }
+
+        nav {
+            display: flex; width: 100%; justify-content: space-around;
+            background: rgba(20,20,20,0.92); border-radius: 18px; padding: 8px; margin-bottom: 22px;
+            border: 1px solid rgba(166,214,8,0.12); box-shadow: 0 0 0 1px rgba(166,214,8,0.08), 0 10px 30px rgba(0,0,0,0.65);
+            backdrop-filter: blur(8px);
+        }
+
+        .nav-btn {
+            border: none; background: transparent; padding: 12px 8px; font-size: 12px; cursor: pointer;
+            color: var(--text-sub); border-bottom: 3px solid transparent; font-family: 'Bebas Neue', sans-serif;
+            letter-spacing: 1px; transition: all 0.2s ease; white-space: nowrap;
+        }
+        .nav-btn.active { color: var(--primary); border-bottom-color: var(--primary); text-shadow: 0 0 12px rgba(166,214,8,0.4); }
+
+        .view-title { font-size: 42px; color: var(--primary); margin: 6px 0 18px 0; text-align: center; font-family: 'Bebas Neue', sans-serif; letter-spacing: 2px; text-transform: uppercase; text-shadow: 0 0 8px rgba(166,214,8,0.45), 0 0 30px rgba(166,214,8,0.15); }
+
+        .card, .table-wrapper {
+            background: linear-gradient(to bottom, rgba(255,255,255,0.02), rgba(255,255,255,0.01)), var(--card-bg);
+            border-radius: 18px; overflow: hidden; border: 1px solid rgba(166,214,8,0.12);
+            box-shadow: 0 0 0 1px rgba(166,214,8,0.06), 0 12px 30px rgba(0,0,0,0.7); position: relative;
+        }
+
+        .card::before, .table-wrapper::before {
+            content: ''; position: absolute; inset: 0; opacity: 0.05;
+            background-image: linear-gradient(45deg, transparent 25%, rgba(255,255,255,0.03) 25%, rgba(255,255,255,0.03) 50%, transparent 50%, transparent 75%, rgba(255,255,255,0.03) 75%);
+            background-size: 6px 6px; pointer-events: none;
+        }
+
+        .card { padding: 22px; width: 100%; }
+        .hidden { display: none !important; }
+
+        table { width: 100%; border-collapse: collapse; }
+        th { background: rgba(166,214,8,0.08); padding: 14px 12px; font-size: 13px; font-family: 'Bebas Neue', sans-serif; letter-spacing: 1px; color: var(--primary); text-transform: uppercase; text-align: left;}
+        tr { border-bottom: 1px solid rgba(255,255,255,0.05); }
+        td { padding: 16px 12px; font-size: 15px; color: var(--rhf-white); text-align: left; }
+        .td-bold { font-weight: 800; color: var(--rhf-white); }
+
+        .team-row { cursor: pointer; transition: all 0.2s ease; }
+        .team-row:hover { background: rgba(166,214,8,0.08); }
+
+        .leader-first { background: rgba(212,175,55,0.08); border-left: 4px solid var(--rhf-gold); }
+        .leader-top { border-left: 4px solid var(--primary); }
+        .leader-first .td-bold { color: var(--rhf-gold); }
+
+        .player-sub-row { background: rgba(166,214,8,0.03); border-left: 4px solid rgba(166,214,8,0.2); }
+        .player-sub-row td { color: #9ca3af; font-size: 13px; padding: 10px 12px; }
+        .player-sub-row td:first-child { padding-left: 28px; color: #cbd5e1; font-style: italic; }
+
+        .chevron { display: inline-block; transition: transform 0.25s ease; color: var(--primary); font-size: 11px; margin-right: 6px; vertical-align: middle; }
+        .chevron.open { transform: rotate(90deg); }
+
+        /* Scorecards */
+        .scorecard-table th, .scorecard-table td { text-align: center; padding: 12px 6px; }
+        .scorecard-table th:first-child, .scorecard-table td:first-child { text-align: left; padding-left: 16px; font-weight: bold; width: 25%; }
+        .score-circle { display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px; border-radius: 50%; border: 1px solid #333; color: var(--text-sub); }
+        .score-used { font-weight: 700; border: 2px solid var(--primary); color: var(--primary); background-color: rgba(166,214,8,0.1); }
+
+        label { display: block; font-size: 13px; font-family: 'Bebas Neue', sans-serif; letter-spacing: 1px; color: var(--primary); margin-bottom: 10px; }
+        select { width: 100%; padding: 14px; border-radius: 12px; border: 1px solid rgba(166,214,8,0.15); font-size: 16px; background: #0c0c0c; color: white; }
+
+        /* Entry Elements */
+        .hole-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 22px; background: rgba(166,214,8,0.08); padding: 10px 14px; border-radius: 14px; border: 1px solid rgba(166,214,8,0.12); }
+        .hole-nav-btn { background: var(--primary); color: black; border: none; width: 48px; height: 48px; font-size: 20px; font-weight: bold; border-radius: 12px; cursor: pointer; }
+        #current-hole-display { font-size: 24px; font-family: 'Bebas Neue', sans-serif; color: var(--primary); letter-spacing: 1px; }
+
+        .player-score-block { margin-bottom: 18px; padding: 18px; background: rgba(255,255,255,0.02); border: 1px solid rgba(166,214,8,0.08); border-radius: 16px; }
+        .player-name-label { font-size: 20px; font-family: 'Bebas Neue', sans-serif; color: var(--rhf-white); margin-bottom: 12px; letter-spacing: 1px; }
+
+        .stepper { display: flex; align-items: center; justify-content: space-between; border: 1px solid rgba(166,214,8,0.15); border-radius: 14px; overflow: hidden; background: #0c0c0c; }
+        .step-btn { width: 74px; height: 58px; font-size: 30px; border: none; background: rgba(166,214,8,0.1); color: var(--primary); cursor: pointer; font-weight: 800; }
+        .step-val { font-size: 34px; font-weight: 800; color: var(--primary); font-family: 'Bebas Neue', sans-serif; letter-spacing: 1px; }
+
+        .submit-btn { width: 100%; padding: 18px; background: var(--primary); color: black; font-size: 22px; font-family: 'Bebas Neue', sans-serif; letter-spacing: 1px; border: none; border-radius: 14px; cursor: pointer; margin-top: 12px; box-shadow: 0 0 20px rgba(166,214,8,0.25); }
+        .submit-btn.btn-warning { background: var(--rhf-gold); box-shadow: 0 0 20px rgba(212,175,55,0.25); color: #050505; }
+        .submit-btn:disabled { background: #333; color: #666; box-shadow: none; cursor: not-allowed; }
+
+        .alert { padding: 14px; border-radius: 12px; font-size: 14px; font-weight: 700; margin-bottom: 18px; text-align: center; }
+        .change-team-lnk { text-align: center; margin-top: 18px; color: var(--text-sub); font-size: 14px; cursor: pointer; font-weight: 600; text-decoration: underline;}
+
+        /* Admin & Status */
+        #paused-banner { background: rgba(229,57,53,0.12); border: 1px solid rgba(229,57,53,0.3); border-radius: 14px; padding: 18px; text-align: center; color: var(--rhf-red); font-family: 'Bebas Neue', sans-serif; font-size: 22px; letter-spacing: 1px; margin-bottom: 18px; }
+        
+        /* Winners */
+        .winners-subtitle { text-align: center; color: var(--text-sub); font-size: 13px; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 28px; }
+        .podium-wrap { display: flex; align-items: flex-end; justify-content: center; gap: 10px; margin-bottom: 30px; }
+        .podium-slot { display: flex; flex-direction: column; align-items: center; flex: 1; }
+        .podium-team-name { font-family: 'Bebas Neue', sans-serif; font-size: 16px; letter-spacing: 1px; text-align: center; margin-bottom: 8px; line-height: 1.2; }
+        .podium-score { font-size: 13px; color: var(--text-sub); margin-bottom: 6px; }
+        .podium-block { width: 100%; border-radius: 12px 12px 0 0; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; padding-top: 14px; font-family: 'Bebas Neue', sans-serif; }
+        .podium-medal { font-size: 28px; margin-bottom: 6px; }
+        .podium-rank { font-size: 32px; letter-spacing: 1px; }
+
+        .podium-1st .podium-team-name { color: var(--rhf-gold); font-size: 18px; }
+        .podium-1st .podium-block { height: 140px; background: linear-gradient(to bottom, rgba(212,175,55,0.25), rgba(212,175,55,0.08)); border: 1px solid rgba(212,175,55,0.3); color: var(--rhf-gold); }
+        .podium-2nd .podium-team-name { color: var(--rhf-silver); }
+        .podium-2nd .podium-block { height: 100px; background: linear-gradient(to bottom, rgba(191,192,194,0.15), rgba(191,192,194,0.05)); border: 1px solid rgba(191,192,194,0.2); color: var(--rhf-silver); }
+        .podium-3rd .podium-team-name { color: #cd7f32; }
+        .podium-3rd .podium-block { height: 72px; background: linear-gradient(to bottom, rgba(205,127,50,0.15), rgba(205,127,50,0.05)); border: 1px solid rgba(205,127,50,0.2); color: #cd7f32; }
+        .confetti-line { text-align: center; font-size: 28px; letter-spacing: 4px; margin-bottom: 16px; }
+        
+        /* Admin Elements */
+        .admin-action-btn { width: 100%; padding: 16px; font-size: 18px; font-family: 'Bebas Neue', sans-serif; letter-spacing: 1px; border: none; border-radius: 14px; cursor: pointer; margin-bottom: 14px; transition: opacity 0.2s; }
+        .btn-danger { background: rgba(229,57,53,0.15); color: var(--rhf-red); border: 1px solid rgba(229,57,53,0.3); }
+        .btn-warning { background: rgba(255,160,0,0.12); color: #FFA000; border: 1px solid rgba(255,160,0,0.25); }
+        .btn-success { background: rgba(166,214,8,0.12); color: var(--primary); border: 1px solid rgba(166,214,8,0.25); }
+        .admin-divider { border: none; border-top: 1px solid rgba(255,255,255,0.06); margin: 18px 0; }
+        .admin-status-tag { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 12px; font-weight: 700; margin-left: 8px; vertical-align: middle; }
+        .tag-active { background: rgba(166,214,8,0.15); color: var(--primary); }
+        .tag-paused { background: rgba(229,57,53,0.15); color: var(--rhf-red); }
+        .tag-final  { background: rgba(212,175,55,0.15); color: var(--rhf-gold); }
+    </style>
+</head>
+<body>
+<div class="container">
+
+    <div class="hero-banner">
+        <div class="hero-title">rHf x SL - 2026 Championship</div>
+        <div class="hero-sub">Golf. Fish. Compete. 4 LYF</div>
+    </div>
+
+    <nav>
+        <button id="tab-leaderboard"  class="nav-btn active" onclick="window.switchView('leaderboard')">LEADERBOARD</button>
+        <button id="tab-scorecards"   class="nav-btn"        onclick="window.switchView('scorecards')">SCORECARDS</button>
+        <button id="tab-entry"        class="nav-btn"        onclick="window.switchView('entry')">ENTER SCORES</button>
+        <button id="tab-winners"      class="nav-btn hidden" onclick="window.switchView('winners')">🏆 WINNERS</button>
+        <button id="tab-admin"        class="nav-btn"        onclick="window.switchView('admin')">⚙</button>
+    </nav>
+
+    <div id="paused-banner" class="hidden">⛔ SCORE ENTRY IS CURRENTLY PAUSED</div>
+
+    <div id="view-leaderboard">
+        <h2 class="view-title">LEADERBOARD</h2>
+        <div class="table-wrapper">
+            <table>
+                <thead><tr><th>Team</th><th>Par</th><th>Thru</th><th>Used</th></tr></thead>
+                <tbody id="leaderboard-body">
+                    <tr><td colspan="4" style="text-align:center; color:var(--text-sub); padding:30px;">INITIALIZING LEADERBOARD...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div id="view-scorecards" class="hidden">
+        <h2 class="view-title">SCORECARDS</h2>
+        <div class="card" style="margin-bottom:16px;">
+            <label>Select Team</label>
+            <select id="select-scorecard-team" onchange="window.renderScorecard()"></select>
+        </div>
+        <div id="scorecard-container" class="table-wrapper hidden"></div>
+    </div>
+
+    <div id="view-entry" class="hidden">
+        <div class="card">
+            <h2 class="view-title">ENTER SCORES</h2>
+            <div id="form-alert" class="alert hidden"></div>
+
+            <div id="entry-paused-msg" class="hidden" style="text-align:center; padding:20px 0; color:var(--rhf-red); font-family:'Bebas Neue',sans-serif; font-size:20px; letter-spacing:1px;">
+                ⛔ Score entry has been paused by the admin.
+            </div>
+
+            <div id="team-selector-box">
+                <label>Select Your Team</label>
+                <select id="select-team" onchange="window.initTeamSession()"></select>
+            </div>
+
+            <div id="score-entry-box" class="hidden">
+                <div id="active-team-display" style="font-family:'Bebas Neue', sans-serif; font-size:26px; color:var(--primary); margin-bottom:16px; text-align:center; letter-spacing:1px; text-transform:uppercase; text-shadow:0 0 10px rgba(166,214,8,0.2);"></div>
+
+                <div class="hole-header">
+                    <button type="button" id="btn-prev-hole" class="hole-nav-btn" onclick="window.changeHole(-1)" disabled>←</button>
+                    <span id="current-hole-display">Hole 1 (Par 4)</span>
+                    <button type="button" id="btn-next-hole" class="hole-nav-btn" onclick="window.changeHole(1)">→</button>
+                </div>
+                <div id="player-inputs-container"></div>
+                <button type="button" id="btn-submit" class="submit-btn" onclick="window.submitAllScores()">SAVE SCORES</button>
+                <div class="change-team-lnk" onclick="window.resetTeam()">← SWITCH TEAM</div>
+            </div>
+        </div>
+    </div>
+
+    <div id="view-winners" class="hidden">
+        <h2 class="view-title">🏆 CHAMPIONS</h2>
+        <div class="winners-subtitle">2026 rHf x SL Championship — Final Results</div>
+        <div class="confetti-line">🎉 🏌️ 🎉</div>
+        <div id="podium-container" class="podium-wrap"></div>
+        <div id="winners-rest" class="winners-rest-table table-wrapper hidden">
+            <table>
+                <thead><tr><th>#</th><th>Team</th><th>Par</th><th>Thru</th></tr></thead>
+                <tbody id="winners-rest-body"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <div id="view-admin" class="hidden">
+        <h2 class="view-title">⚙ ADMIN</h2>
+        <div id="admin-lock-screen" class="card">
+            <div style="text-align:center; padding:30px 0 10px;"><div style="font-size:40px; margin-bottom:12px;">🔒</div><p style="color:var(--text-sub); font-size:14px; margin:0 0 18px;">Admin access only</p></div>
+            <input type="password" id="admin-pw-input" style="width:100%; padding:14px; border-radius:12px; border:1px solid rgba(166,214,8,0.2); font-size:22px; background:#0c0c0c; color:white; text-align:center; letter-spacing:6px; font-family:'Bebas Neue', sans-serif; margin-bottom:12px;" placeholder="••••" maxlength="10" />
+            <button style="width:100%; padding:14px; background:var(--primary); color:black; font-size:18px; font-family:'Bebas Neue', sans-serif; letter-spacing:1px; border:none; border-radius:12px; cursor:pointer;" onclick="window.adminUnlock()">UNLOCK</button>
+            <div id="admin-pw-error" class="hidden" style="color:var(--rhf-red); font-size:13px; font-weight:700; text-align:center; margin-top:8px;">Wrong password. Try again.</div>
+        </div>
+
+        <div id="admin-panel" class="card hidden">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:18px;">
+                <span style="font-family:'Bebas Neue',sans-serif; font-size:20px; color:var(--primary);">TOURNAMENT STATUS</span>
+                <span id="status-tag" class="admin-status-tag tag-active">LIVE</span>
+            </div>
+            <hr class="admin-divider">
+            <label style="margin-bottom:6px;">SCORE ENTRY</label>
+            <button id="btn-pause-toggle" class="admin-action-btn btn-warning" onclick="window.adminTogglePause()">⏸ PAUSE SCORE ENTRY</button>
+            <hr class="admin-divider">
+            <label style="margin-bottom:6px;">DATA</label>
+            <button class="admin-action-btn btn-danger" onclick="window.adminClearScores()">🗑 CLEAR ALL SCORES</button>
+            <hr class="admin-divider">
+            <label style="margin-bottom:6px;">FINALIZE</label>
+            <button class="admin-action-btn btn-success" onclick="window.adminFinalize()">🏆 FINALIZE & SHOW WINNERS</button>
+            <hr class="admin-divider">
+            <button class="admin-action-btn" style="background:rgba(255,255,255,0.04); color:var(--text-sub); border:1px solid rgba(255,255,255,0.08);" onclick="window.adminLock()">🔒 LOCK ADMIN</button>
+            <div id="admin-action-msg" class="alert hidden" style="margin-top:14px; margin-bottom:0;"></div>
+        </div>
+    </div>
+</div>
+
+<script type="module">
+    import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+
+    const DB_URL = "https://gnsqewjsxveezexpitky.supabase.co";
+    const DB_KEY = "sb_publishable_cVHE5Ju2PWvsvZmdW3lINQ_SjIgP2kD";
+    const dbClient = createClient(DB_URL, DB_KEY);
+    const ADMIN_PASSWORD = "2909";
+
+    let globalTeams = [];
+    let globalPlayers = [];
+    let currentTeamId = null;
+    let currentHole = 1;
+    let sessionPlayers = [];
+    let inputScoresState = {};
+    let expandedTeams = new Set();
+    let entryPaused = false;
+    let tournamentFinal = false;
+    let adminUnlocked = false;
+    let hasExistingScores = false;
+    window.globalCalculatedTeams = {};
+
+    // ─── NAV ───
+    window.switchView = function(target) {
+        ['leaderboard','scorecards','entry','winners','admin'].forEach(function(v) {
+            document.getElementById('view-' + v).classList.add('hidden');
+            document.getElementById('tab-' + v).classList.remove('active');
+        });
+        document.getElementById('view-' + target).classList.remove('hidden');
+        document.getElementById('tab-' + target).classList.add('active');
+
+        if (target === 'leaderboard') window.fetchAndCalculateLeaderboard();
+        if (target === 'scorecards')  window.renderScorecard();
+        if (target === 'entry')       applyEntryPauseState();
+        if (target === 'winners')     renderWinners();
+    };
+
+    // ─── ADMIN ───
+    window.adminUnlock = function() {
+        if (document.getElementById('admin-pw-input').value === ADMIN_PASSWORD) {
+            adminUnlocked = true;
+            document.getElementById('admin-lock-screen').classList.add('hidden');
+            document.getElementById('admin-panel').classList.remove('hidden');
+            document.getElementById('admin-pw-error').classList.add('hidden');
+            updateAdminUI();
+        } else {
+            document.getElementById('admin-pw-error').classList.remove('hidden');
+            document.getElementById('admin-pw-input').value = '';
+        }
+    };
+
+    window.adminLock = function() {
+        adminUnlocked = false;
+        document.getElementById('admin-lock-screen').classList.remove('hidden');
+        document.getElementById('admin-panel').classList.add('hidden');
+        document.getElementById('admin-pw-input').value = '';
+        document.getElementById('admin-pw-error').classList.add('hidden');
+    };
+
+    window.adminTogglePause = function() {
+        entryPaused = !entryPaused;
+        updateAdminUI();
+        showAdminMsg(entryPaused ? '⏸ Score entry paused.' : '▶ Score entry resumed.', entryPaused ? 'warn' : 'ok');
+    };
+
+    window.adminClearScores = async function() {
+        if (!confirm('Clear ALL scores? This cannot be undone.')) return;
+        try {
+            const { error } = await dbClient.from('scores').delete().neq('player_id', '00000000-0000-0000-0000-000000000000');
+            if (error) throw error;
+            showAdminMsg('✅ All scores cleared.', 'ok');
+            window.fetchAndCalculateLeaderboard();
+        } catch(err) {
+            showAdminMsg('❌ Error: ' + err.message, 'err');
+        }
+    };
+
+    window.adminFinalize = function() {
+        if (!confirm('Finalize the tournament and reveal the Winners page? Score entry will be locked.')) return;
+        tournamentFinal = true; entryPaused = true;
+        document.getElementById('tab-winners').classList.remove('hidden');
+        updateAdminUI();
+        showAdminMsg('🏆 Tournament finalized! Winners tab is now live.', 'ok');
+    };
+
+    function updateAdminUI() {
+        const statusTag = document.getElementById('status-tag');
+        const pauseBtn = document.getElementById('btn-pause-toggle');
+        const pausedBanner = document.getElementById('paused-banner');
+
+        if (tournamentFinal) { statusTag.textContent = 'FINALIZED'; statusTag.className = 'admin-status-tag tag-final'; }
+        else if (entryPaused) { statusTag.textContent = 'PAUSED'; statusTag.className = 'admin-status-tag tag-paused'; }
+        else { statusTag.textContent = 'LIVE'; statusTag.className = 'admin-status-tag tag-active'; }
+
+        pauseBtn.textContent = entryPaused ? '▶ RESUME SCORE ENTRY' : '⏸ PAUSE SCORE ENTRY';
+        if (entryPaused) { pausedBanner.classList.remove('hidden'); } else { pausedBanner.classList.add('hidden'); }
+    }
+
+    function applyEntryPauseState() {
+        const pausedMsg = document.getElementById('entry-paused-msg');
+        const teamSelector = document.getElementById('team-selector-box');
+        const scoreBox = document.getElementById('score-entry-box');
+        const submitBtn = document.getElementById('btn-submit');
+        if (entryPaused) {
+            pausedMsg.classList.remove('hidden'); teamSelector.classList.add('hidden'); scoreBox.classList.add('hidden');
+        } else {
+            pausedMsg.classList.add('hidden'); teamSelector.classList.remove('hidden'); if (submitBtn) submitBtn.disabled = false;
+        }
+    }
+
+    function showAdminMsg(text, type) {
+        const el = document.getElementById('admin-action-msg');
+        el.textContent = text;
+        if (type === 'ok') { el.style.backgroundColor = 'rgba(166,214,8,0.12)'; el.style.color = '#A6D608'; }
+        else if (type === 'warn') { el.style.backgroundColor = 'rgba(255,160,0,0.12)'; el.style.color = '#FFA000'; }
+        else { el.style.backgroundColor = 'rgba(229,57,53,0.12)'; el.style.color = '#E53935'; }
+        el.classList.remove('hidden'); setTimeout(function() { el.classList.add('hidden'); }, 3500);
+    }
+
+    // ─── OPTIMIZATION ENGINE ───
+    function runOptimizationEngine(holeScores) {
+        holeScores.sort(function(a, b) { return a.hole_number - b.hole_number; });
+        const activeHoles = holeScores.filter(function(h) { return h.player_a_strokes !== null || h.player_b_strokes !== null; }).length;
+        let bestScore = Infinity; let optimalACount = 0; let optimalBCount = 0; let bestPath = []; 
+
+        function exploreBranch(idx, accumulatingStrokes, countA, countB, currentPath) {
+            if (accumulatingStrokes >= bestScore) return;
+            if (idx === holeScores.length) {
+                const holesLeft = 18 - activeHoles;
+                if (activeHoles === 18 && (countA < 6 || countB < 6)) return;
+                if ((countA + holesLeft) < 6 || (countB + holesLeft) < 6) return;
+                if (accumulatingStrokes < bestScore) { bestScore = accumulatingStrokes; optimalACount = countA; optimalBCount = countB; bestPath = [...currentPath]; }
+                return;
+            }
+            const h = holeScores[idx];
+            if (h.player_a_strokes === null && h.player_b_strokes === null) { currentPath.push(null); exploreBranch(idx + 1, accumulatingStrokes, countA, countB, currentPath); currentPath.pop(); return; }
+            if (h.player_b_strokes === null) { currentPath.push('A'); exploreBranch(idx + 1, accumulatingStrokes + h.player_a_strokes, countA + 1, countB, currentPath); currentPath.pop(); return; }
+            if (h.player_a_strokes === null) { currentPath.push('B'); exploreBranch(idx + 1, accumulatingStrokes + h.player_b_strokes, countA, countB + 1, currentPath); currentPath.pop(); return; }
+
+            const tryA = function() { currentPath.push('A'); exploreBranch(idx + 1, accumulatingStrokes + h.player_a_strokes, countA + 1, countB, currentPath); currentPath.pop(); };
+            const tryB = function() { currentPath.push('B'); exploreBranch(idx + 1, accumulatingStrokes + h.player_b_strokes, countA, countB + 1, currentPath); currentPath.pop(); };
+
+            if (h.player_a_strokes < h.player_b_strokes) { tryA(); tryB(); } else if (h.player_b_strokes < h.player_a_strokes) { tryB(); tryA(); } else { if (countA <= countB) { tryA(); tryB(); } else { tryB(); tryA(); } }
+        }
+
+        exploreBranch(0, 0, 0, 0, []);
+
+        if (bestScore === Infinity) {
+            let greedyScore = 0; let gA = 0; let gB = 0; bestPath = [];
+            holeScores.forEach(function(h) {
+                if (h.player_a_strokes === null && h.player_b_strokes === null) { bestPath.push(null); } 
+                else if (h.player_a_strokes !== null && h.player_b_strokes === null) { bestPath.push('A'); gA++; greedyScore += h.player_a_strokes; } 
+                else if (h.player_b_strokes !== null && h.player_a_strokes === null) { bestPath.push('B'); gB++; greedyScore += h.player_b_strokes; } 
+                else {
+                    if (h.player_a_strokes < h.player_b_strokes) { bestPath.push('A'); gA++; greedyScore += h.player_a_strokes; } 
+                    else if (h.player_b_strokes < h.player_a_strokes) { bestPath.push('B'); gB++; greedyScore += h.player_b_strokes; } 
+                    else { if (gA <= gB) { bestPath.push('A'); gA++; greedyScore += h.player_a_strokes; } else { bestPath.push('B'); gB++; greedyScore += h.player_b_strokes; } }
+                }
+            });
+            bestScore = greedyScore; optimalACount = gA; optimalBCount = gB;
+        }
+
+        let holePathMap = {};
+        holeScores.forEach(function(h, index) { holePathMap[h.hole_number] = bestPath[index]; });
+        const totalParAccumulated = holeScores.reduce(function(sum, h) { return sum + (holePathMap[h.hole_number] ? h.par : 0); }, 0);
+
+        return { totalStrokes: bestScore, relativeToPar: bestScore - totalParAccumulated, thru: activeHoles, usedA: optimalACount, usedB: optimalBCount, pathMap: holePathMap, scores: holeScores };
+    }
+
+    // ─── LEADERBOARD ───
+    window.toggleTeamExpand = function(teamKey) {
+        const rows = document.querySelectorAll('.player-row-' + teamKey);
+        const chevron = document.getElementById('chevron-' + teamKey);
+        if (expandedTeams.has(teamKey)) { expandedTeams.delete(teamKey); rows.forEach(function(r) { r.classList.add('hidden'); }); if (chevron) chevron.classList.remove('open'); } 
+        else { expandedTeams.add(teamKey); rows.forEach(function(r) { r.classList.remove('hidden'); }); if (chevron) chevron.classList.add('open'); }
+    };
+
+    window.fetchAndCalculateLeaderboard = async function() {
+        const tbody = document.getElementById('leaderboard-body');
+        try {
+            const { data: matrix, error } = await dbClient.from('team_hole_scores_matrix').select('*');
+            if (error) throw error;
+
+            if (!matrix || matrix.length === 0) { tbody.innerHTML = `<tr><td colspan='4' style='text-align:center; padding:30px;'>WAITING FOR SAVAGES TO POST SCORES</td></tr>`; return; }
+
+            const seen = new Set();
+            const deduped = matrix.filter(function(row) { if (seen.has(row.team_name)) return false; seen.add(row.team_name); return true; });
+            const groupedData = matrix.reduce(function(acc, row) {
+                if (!acc[row.team_id]) acc[row.team_id] = { name: row.team_name, scores: [] };
+                acc[row.team_id].scores.push(row); return acc;
+            }, {});
+
+            window.globalCalculatedTeams = {}; 
+
+            const calculatedTeams = Object.keys(groupedData).map(function(tId) {
+                const teamData = groupedData[tId];
+                const engineData = runOptimizationEngine(teamData.scores);
+                const fullTeamData = Object.assign({}, { id: tId, name: teamData.name }, engineData);
+                window.globalCalculatedTeams[tId] = fullTeamData; 
+                return fullTeamData;
+            }).sort(function(x, y) { return x.relativeToPar - y.relativeToPar; });
+
+            tbody.innerHTML = '';
+            
+            calculatedTeams.forEach(function(t, index) {
+                const teamMembers = globalPlayers.filter(function(p) { return p.team_id === t.id; });
+                const playerA = (teamMembers[0] && teamMembers[0].player_name) ? teamMembers[0].player_name : 'Player A';
+                const playerB = (teamMembers[1] && teamMembers[1].player_name) ? teamMembers[1].player_name : 'Player B';
+
+                let aStrokes = 0, aParTotal = 0, aThru = 0; let bStrokes = 0, bParTotal = 0, bThru = 0;
+                t.scores.forEach(function(h) {
+                    if (h.player_a_strokes !== null) { aStrokes += h.player_a_strokes; aParTotal += h.par; aThru++; }
+                    if (h.player_b_strokes !== null) { bStrokes += h.player_b_strokes; bParTotal += h.par; bThru++; }
+                });
+
+                let aRel = aStrokes - aParTotal; let bRel = bStrokes - bParTotal;
+                let formatRel = function(rel) { return rel === 0 ? 'E' : (rel > 0 ? '+' + rel : rel); };
+                let colorRel = function(rel) { return rel < 0 ? '#E53935' : (rel > 0 ? '#9ca3af' : '#A6D608'); };
+
+                let displayPar = t.relativeToPar === 0 ? 'E' : (t.relativeToPar > 0 ? '+' + t.relativeToPar : t.relativeToPar);
+                let strokeColor = t.relativeToPar < 0 ? '#E53935' : (t.relativeToPar > 0 ? '#9ca3af' : '#A6D608');
+                
+                const teamKey = t.id.replace(/\W+/g, '_');
+                let rankClass = '';
+                if (index === 0) rankClass = 'leader-first'; else if (index < 5) rankClass = 'leader-top';
+
+                let tr = document.createElement('tr');
+                tr.className = `team-row ${rankClass}`;
+                tr.setAttribute('onclick', `window.toggleTeamExpand('${teamKey}')`);
+                tr.innerHTML = `
+                    <td class="td-bold"><span class="chevron" id="chevron-${teamKey}">▶</span>${t.name}</td>
+                    <td class="td-bold" style="color: ${strokeColor}">${displayPar}</td>
+                    <td>${t.thru}</td>
+                    <td style="font-size: 13px; color: var(--text-sub);">${t.usedA}/${t.usedB}</td>
+                `;
+                tbody.appendChild(tr);
+
+                let trA = document.createElement('tr');
+                trA.className = `player-sub-row player-row-${teamKey} hidden`;
+                trA.innerHTML = `<td>↳ ${playerA}</td><td style="color: ${colorRel(aRel)}; font-weight:bold;">${formatRel(aRel)}</td><td>${aThru}</td><td>${t.usedA}</td>`;
+                tbody.appendChild(trA);
+
+                let trB = document.createElement('tr');
+                trB.className = `player-sub-row player-row-${teamKey} hidden`;
+                trB.innerHTML = `<td>↳ ${playerB}</td><td style="color: ${colorRel(bRel)}; font-weight:bold;">${formatRel(bRel)}</td><td>${bThru}</td><td>${t.usedB}</td>`;
+                tbody.appendChild(trB);
+            });
+        } catch (err) { tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:30px; color:#E53935;">LEADERBOARD FAILURE</td></tr>`; }
+    };
+
+    // ─── WINNERS ───
+    async function renderWinners() {
+        const podiumEl = document.getElementById('podium-container');
+        const restEl = document.getElementById('winners-rest');
+        const restBody = document.getElementById('winners-rest-body');
+        podiumEl.innerHTML = '<p style="color:var(--text-sub); text-align:center;">Loading results...</p>';
+
+        try {
+            const { data: matrix, error } = await dbClient.from('team_hole_scores_matrix').select('*');
+            if (error) throw error;
+
+            const groupedData = (matrix || []).reduce(function(acc, row) {
+                if (!acc[row.team_id]) acc[row.team_id] = { name: row.team_name, scores: [] };
+                acc[row.team_id].scores.push(row); return acc;
+            }, {});
+
+            const ranked = Object.keys(groupedData).map(function(tId) {
+                const teamData = groupedData[tId];
+                const engineData = runOptimizationEngine(teamData.scores);
+                return Object.assign({}, { id: tId, name: teamData.name }, engineData);
+            }).sort(function(x, y) { return x.relativeToPar - y.relativeToPar; });
+
+            if (ranked.length === 0) { podiumEl.innerHTML = '<p style="color:var(--text-sub); text-align:center; padding:20px;">No scores yet.</p>'; return; }
+
+            const medals = ['🥇','🥈','🥉']; const slots = [1, 0, 2]; const classes = ['podium-2nd', 'podium-1st', 'podium-3rd'];
+            podiumEl.innerHTML = '';
+            slots.forEach(function(rankIdx, displayIdx) {
+                const team = ranked[rankIdx]; if (!team) return;
+                const slot = document.createElement('div');
+                slot.className = `podium-slot ${classes[displayIdx]}`;
+                slot.innerHTML = `
+                    <div class="podium-team-name">${team.name}</div>
+                    <div class="podium-score">${team.relativeToPar === 0 ? 'E' : (team.relativeToPar > 0 ? '+'+team.relativeToPar : team.relativeToPar)} (${team.thru || 0} holes)</div>
+                    <div class="podium-block"><div class="podium-medal">${medals[rankIdx]}</div><div class="podium-rank">${rankIdx + 1}${rankIdx === 0 ? 'ST' : rankIdx === 1 ? 'ND' : 'RD'}</div></div>
+                `;
+                podiumEl.appendChild(slot);
+            });
+
+            if (ranked.length > 3) {
+                restBody.innerHTML = '';
+                ranked.slice(3).forEach(function(team, i) {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `<td>${i + 4}</td><td>${team.name}</td><td>${team.relativeToPar === 0 ? 'E' : (team.relativeToPar > 0 ? '+'+team.relativeToPar : team.relativeToPar)}</td><td>${team.thru || 0}</td>`;
+                    restBody.appendChild(tr);
+                });
+                restEl.classList.remove('hidden');
+            } else { restEl.classList.add('hidden'); }
+        } catch(err) { podiumEl.innerHTML = `<p style="color:var(--rhf-red); text-align:center;">Failed to load results.</p>`; }
+    }
+
+    // ─── SCORECARDS ───
+    window.renderScorecard = function() {
+        const teamId = document.getElementById('select-scorecard-team').value;
+        const container = document.getElementById('scorecard-container');
+        if (!teamId) { container.classList.add('hidden'); return; }
+
+        const teamObj = window.globalCalculatedTeams[teamId];
+        if (!teamObj) {
+            container.innerHTML = '<div style="padding:20px; text-align:center; color:var(--text-sub);">Loading scorecard data...</div>';
+            container.classList.remove('hidden'); return;
+        }
+
+        container.classList.remove('hidden');
+        const teamMembers = globalPlayers.filter(function(p) { return p.team_id === teamId; });
+        const pA = teamMembers[0] ? teamMembers[0].player_name.split(' ')[0] : 'P1';
+        const pB = teamMembers[1] ? teamMembers[1].player_name.split(' ')[0] : 'P2';
+
+        let html = '<table class="scorecard-table"><thead><tr><th>Hole</th><th>Par</th><th>' + pA + '</th><th>' + pB + '</th></tr></thead><tbody>';
+        for (let i = 1; i <= 18; i++) {
+            const holeData = teamObj.scores.find(function(h) { return h.hole_number === i; }) || { par: 4, player_a_strokes: null, player_b_strokes: null };
+            const pathChoice = teamObj.pathMap ? teamObj.pathMap[i] : null;
+
+            let scoreA = holeData.player_a_strokes; let scoreB = holeData.player_b_strokes;
+            let classA = 'score-circle'; let classB = 'score-circle';
+
+            if (pathChoice === 'A') classA += ' score-used';
+            if (pathChoice === 'B') classB += ' score-used';
+
+            let displayA = scoreA !== null ? `<span class="${classA}">${scoreA}</span>` : '-';
+            let displayB = scoreB !== null ? `<span class="${classB}">${scoreB}</span>` : '-';
+
+            html += `<tr><td>${i}</td><td style="color:#7A7A7A;">${holeData.par || 4}</td><td>${displayA}</td><td>${displayB}</td></tr>`;
+        }
+        html += '</tbody></table>';
+        container.innerHTML = html;
+    };
+
+    // ─── ENTRY ───
+    window.checkExistingScores = async function() {
+        if (!currentTeamId || sessionPlayers.length === 0) return;
+        const playerIds = sessionPlayers.map(function(p) { return p.id; });
+        const { data, error } = await dbClient.from('scores').select('*').in('player_id', playerIds).eq('hole_number', currentHole);
+        const submitBtn = document.getElementById('btn-submit');
+
+        if (data && data.length > 0) {
+            hasExistingScores = true;
+            data.forEach(function(score) { inputScoresState[score.player_id] = score.strokes; });
+            submitBtn.textContent = "OVERWRITE SCORES"; submitBtn.classList.add('btn-warning');
+        } else {
+            hasExistingScores = false;
+            sessionPlayers.forEach(function(p) { inputScoresState[p.id] = 4; });
+            submitBtn.textContent = "SAVE SCORES"; submitBtn.classList.remove('btn-warning');
+        }
+        renderDualPlayerInputs();
+    };
+
+    window.initTeamSession = async function() {
+        if (entryPaused) return;
+        currentTeamId = document.getElementById('select-team').value;
+        if (!currentTeamId) return;
+        sessionPlayers = globalPlayers.filter(function(p) { return p.team_id === currentTeamId; });
+        
+        currentHole = 1;
+        document.getElementById('current-hole-display').textContent = 'Hole 1 (Par 4)';
+        document.getElementById('btn-prev-hole').disabled = true;
+        document.getElementById('btn-next-hole').disabled = false;
+
+        const selectedTeam = globalTeams.find(function(t) { return t.id === currentTeamId; });
+        if (selectedTeam) { document.getElementById('active-team-display').textContent = selectedTeam.team_name; }
+
+        document.getElementById('team-selector-box').classList.add('hidden');
+        document.getElementById('score-entry-box').classList.remove('hidden');
+        await window.checkExistingScores();
+    };
+
+    window.resetTeam = function() {
+        currentTeamId = null; hasExistingScores = false;
+        document.getElementById('select-team').value = "";
+        document.getElementById('team-selector-box').classList.remove('hidden');
+        document.getElementById('score-entry-box').classList.add('hidden');
+        document.getElementById('form-alert').className = "alert hidden";
+    };
+
+    window.changeHole = async function(direction) {
+        currentHole = Math.max(1, Math.min(18, currentHole + direction));
+        document.getElementById('current-hole-display').textContent = 'Hole ' + currentHole + ' (Par 4)';
+        document.getElementById('btn-prev-hole').disabled = (currentHole === 1);
+        document.getElementById('btn-next-hole').disabled = (currentHole === 18);
+        await window.checkExistingScores();
+    };
+
+    window.adjustPlayerStrokes = function(playerId, amount) {
+        inputScoresState[playerId] = Math.max(1, (inputScoresState[playerId] || 4) + amount);
+        document.getElementById('display-' + playerId).textContent = inputScoresState[playerId];
+    };
+
+    function renderDualPlayerInputs() {
+        const container = document.getElementById('player-inputs-container');
+        container.innerHTML = '';
+        sessionPlayers.forEach(function(p) {
+            const block = document.createElement('div');
+            block.className = 'player-score-block';
+            block.innerHTML = `
+                <div class="player-name-label">${p.player_name}</div>
+                <div class="stepper">
+                    <button type="button" class="step-btn" onclick="window.adjustPlayerStrokes('${p.id}', -1)">-</button>
+                    <span id="display-${p.id}" class="step-val">${inputScoresState[p.id]}</span>
+                    <button type="button" class="step-btn" onclick="window.adjustPlayerStrokes('${p.id}', 1)">+</button>
+                </div>
+            `;
+            container.appendChild(block);
+        });
+    }
+
+    window.submitAllScores = async function() {
+        if (entryPaused) return;
+        if (hasExistingScores) {
+            const confirmed = confirm(`Scores already exist for Hole ${currentHole}. Are you sure you want to overwrite them?`);
+            if (!confirmed) return;
+        }
+
+        const submitBtn = document.getElementById('btn-submit');
+        const alertBox = document.getElementById('form-alert');
+        submitBtn.disabled = true; alertBox.className = "alert hidden";
+        const batchPayload = sessionPlayers.map(function(p) {
+            return { player_id: p.id, hole_number: parseInt(currentHole), strokes: parseInt(inputScoresState[p.id]) };
+        });
+
+        try {
+            const { error } = await dbClient.from('scores').upsert(batchPayload, { onConflict: 'player_id,hole_number' });
+            if (error) throw error;
+            alertBox.textContent = 'HOLE ' + currentHole + ' LOCKED IN 🔥';
+            alertBox.style.backgroundColor = "rgba(166,214,8,0.15)"; alertBox.style.color = "#A6D608";
+            
+            if (currentHole < 18) {
+                setTimeout(function() { window.changeHole(1); alertBox.className = "alert hidden"; }, 800);
+            } else {
+                hasExistingScores = true; 
+                submitBtn.textContent = "OVERWRITE SCORES"; submitBtn.classList.add('btn-warning');
+            }
+        } catch (err) {
+            alertBox.textContent = "CRASH: " + err.message;
+            alertBox.style.backgroundColor = "rgba(229,57,53,0.15)"; alertBox.style.color = "#E53935";
+        } finally {
+            setTimeout(function() { submitBtn.disabled = false; }, 400);
+            alertBox.classList.remove('hidden');
+        }
+    };
+
+    // ─── BOOT ───
+    async function bootApp() {
+        try {
+            const resTeams = await dbClient.from('teams').select('*').order('team_name');
+            const resPlayers = await dbClient.from('players').select('*').order('player_name');
+
+            globalTeams = resTeams.data || [];
+            globalPlayers = resPlayers.data || [];
+
+            const selectTeam = document.getElementById('select-team');
+            const selectCardTeam = document.getElementById('select-scorecard-team');
+            selectTeam.innerHTML = '<option value="">-- CHOOSE TEAM --</option>';
+            selectCardTeam.innerHTML = '<option value="">-- CHOOSE TEAM --</option>';
+
+            globalTeams.forEach(function(t) {
+                let o1 = document.createElement('option'); o1.value = t.id; o1.textContent = t.team_name; selectTeam.appendChild(o1);
+                let o2 = document.createElement('option'); o2.value = t.id; o2.textContent = t.team_name; selectCardTeam.appendChild(o2);
+            });
+
+            await window.fetchAndCalculateLeaderboard();
+
+            // WebSockets Sync
+            dbClient.channel('public-scores-changes').on('postgres_changes', { event: '*', schema: 'public', table: 'scores' }, async function() {
+                await window.fetchAndCalculateLeaderboard();
+                if(!document.getElementById('view-scorecards').classList.contains('hidden') && document.getElementById('select-scorecard-team').value) {
+                    window.renderScorecard();
+                }
+            }).subscribe();
+
+        } catch (err) { console.error("Boot Error:", err); }
+    }
+
+    bootApp();
+</script>
+</body>
+</html>
