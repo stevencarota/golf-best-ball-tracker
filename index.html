@@ -536,3 +536,19 @@
             await window.fetchAndCalculateLeaderboard();
 
             // The missing real-time sync hook
+            dbClient.channel('public-scores-changes').on('postgres_changes', { event: '*', schema: 'public', table: 'scores' }, async function() {
+                await window.fetchAndCalculateLeaderboard();
+                if(!document.getElementById('view-scorecards').classList.contains('hidden') && document.getElementById('select-scorecard-team').value) {
+                    window.renderScorecard();
+                }
+            }).subscribe();
+
+        } catch (err) {
+            console.error("Boot Error:", err);
+        }
+    }
+
+    bootApp();
+</script>
+</body>
+</html>
