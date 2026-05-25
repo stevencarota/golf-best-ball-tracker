@@ -15,7 +15,7 @@
         .container { width: 100%; max-width: 450px; }
         
         nav { display: flex; width: 100%; justify-content: space-around; background-color: var(--card-bg); border-radius: 12px; padding: 6px; margin-bottom: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); box-sizing: border-box; }
-        .nav-btn { border: none; background: none; padding: 12px 24px; font-size: 15px; cursor: pointer; color: var(--text-sub); border-bottom: 3px solid transparent; font-weight: 500; }
+        .nav-btn { border: none; background: none; padding: 10px 12px; font-size: 14px; cursor: pointer; color: var(--text-sub); border-bottom: 3px solid transparent; font-weight: 500; }
         .nav-btn.active { color: var(--primary); border-bottom-color: var(--primary); font-weight: 700; }
 
         .view-title { font-size: 20px; color: var(--primary); margin: 4px 0 16px 0; text-align: center; font-weight: 700; }
@@ -34,6 +34,13 @@
         .sub-row { background-color: #f8fafc; }
         .sub-row td { padding: 10px 12px; font-size: 14px; border-top: 1px solid #f1f5f9; color: #475569; }
         .chevron { display: inline-block; width: 18px; font-size: 11px; transition: transform 0.2s; color: var(--primary); text-align: center; }
+
+        .scorecard-table th, .scorecard-table td { text-align: center; padding: 12px 6px; }
+        .scorecard-table th:first-child, .scorecard-table td:first-child { text-align: left; padding-left: 16px; font-weight: bold; width: 25%; }
+        .scorecard-table td:nth-child(2) { color: var(--text-sub); font-size: 14px; }
+        
+        .score-circle { display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px; border-radius: 50%; transition: all 0.2s; }
+        .score-used { font-weight: 700; border: 2px solid var(--primary); color: var(--primary); background-color: var(--primary-light); }
 
         label { display: block; font-size: 14px; font-weight: 600; color: #475569; margin-bottom: 8px; }
         select { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--border); font-size: 16px; background-color: #fff; box-sizing: border-box; }
@@ -60,8 +67,9 @@
 
     <div class="container">
         <nav>
-            <button id="tab-leaderboard" class="nav-btn active" onclick="window.switchView('leaderboard')">📊 Leaderboard</button>
-            <button id="tab-entry" class="nav-btn" onclick="window.switchView('entry')">✏️ Enter Scores</button>
+            <button id="tab-leaderboard" class="nav-btn active" onclick="window.switchView('leaderboard')">📊 Leader</button>
+            <button id="tab-scorecards" class="nav-btn" onclick="window.switchView('scorecards')">📋 Cards</button>
+            <button id="tab-entry" class="nav-btn" onclick="window.switchView('entry')">✏️ Enter</button>
         </nav>
 
         <div id="view-leaderboard">
@@ -78,6 +86,15 @@
             </div>
         </div>
 
+        <div id="view-scorecards" class="hidden">
+            <h2 class="view-title">Team Scorecards</h2>
+            <div class="card" style="margin-bottom: 16px;">
+                <label>Select Team to View</label>
+                <select id="select-scorecard-team" onchange="window.renderScorecard()"></select>
+            </div>
+            <div id="scorecard-container" class="table-wrapper hidden"></div>
+        </div>
+
         <div id="view-entry" class="hidden">
             <div class="card">
                 <h2 class="view-title">Submit Hole Scores</h2>
@@ -85,7 +102,7 @@
                 
                 <div id="team-selector-box">
                     <div class="input-group">
-                        <label>Select Your Team Focus</label>
+                        <label>Select Your Team</label>
                         <select id="select-team" onchange="window.initTeamSession()"></select>
                     </div>
                 </div>
@@ -107,14 +124,24 @@
     </div>
 
     <script type="module">
-        // 1. BULLETPROOF UI BINDINGS (Always load first so the app never "freezes")
+        window.globalCalculatedTeams = {}; // Global Brain cache
+
         window.switchView = function(target) {
-            document.getElementById('view-leaderboard').classList.toggle('hidden', target !== 'leaderboard');
-            document.getElementById('view-entry').classList.toggle('hidden', target !== 'entry');
-            document.getElementById('tab-leaderboard').classList.toggle('active', target === 'leaderboard');
-            document.getElementById('tab-entry').classList.toggle('active', target === 'entry');
+            document.getElementById('view-leaderboard').classList.add('hidden');
+            document.getElementById('view-scorecards').classList.add('hidden');
+            document.getElementById('view-entry').classList.add('hidden');
+            
+            document.getElementById('tab-leaderboard').classList.remove('active');
+            document.getElementById('tab-scorecards').classList.remove('active');
+            document.getElementById('tab-entry').classList.remove('active');
+
+            document.getElementById('view-' + target).classList.remove('hidden');
+            document.getElementById('tab-' + target).classList.add('active');
+
             if (target === 'leaderboard' && window.fetchAndCalculateLeaderboard) {
                 window.fetchAndCalculateLeaderboard();
+            } else if (target === 'scorecards') {
+                window.renderScorecard();
             }
         };
 
@@ -123,26 +150,18 @@
             const icon = document.getElementById('icon-' + teamId);
             let isHidden = false;
             rows.forEach(function(r) {
-                if (r.classList.contains('hidden')) {
-                    isHidden = true;
-                    r.classList.remove('hidden');
-                } else {
-                    r.classList.add('hidden');
-                }
+                if (r.classList.contains('hidden')) { isHidden = true; r.classList.remove('hidden'); } 
+                else { r.classList.add('hidden'); }
             });
-            if (icon) {
-                icon.style.transform = isHidden ? 'rotate(90deg)' : 'rotate(0deg)';
-            }
+            if (icon) icon.style.transform = isHidden ? 'rotate(90deg)' : 'rotate(0deg)';
         };
 
         window.initTeamSession = function() {
             currentTeamId = document.getElementById('select-team').value;
             if (!currentTeamId) return;
-
             sessionPlayers = globalPlayers.filter(function(p) { return p.team_id === currentTeamId; });
             document.getElementById('team-selector-box').classList.add('hidden');
             document.getElementById('score-entry-box').classList.remove('hidden');
-            
             sessionPlayers.forEach(function(p) { inputScoresState[p.id] = 4; });
             renderDualPlayerInputs();
         };
@@ -160,7 +179,6 @@
             document.getElementById('current-hole-display').textContent = 'Hole ' + currentHole + ' (Par 4)';
             document.getElementById('btn-prev-hole').disabled = (currentHole === 1);
             document.getElementById('btn-next-hole').disabled = (currentHole === 18);
-            
             sessionPlayers.forEach(function(p) { inputScoresState[p.id] = 4; });
             renderDualPlayerInputs();
         };
@@ -196,18 +214,14 @@
             alertBox.className = "alert hidden";
 
             const batchPayload = sessionPlayers.map(function(p) {
-                return {
-                    player_id: p.id,
-                    hole_number: parseInt(currentHole),
-                    strokes: parseInt(inputScoresState[p.id])
-                };
+                return { player_id: p.id, hole_number: parseInt(currentHole), strokes: parseInt(inputScoresState[p.id]) };
             });
 
             try {
                 const { error } = await dbClient.from('scores').upsert(batchPayload, { onConflict: 'player_id,hole_number' });
                 if (error) throw error;
 
-                alertBox.textContent = 'Hole ' + currentHole + ' scores submitted successfully! ✅';
+                alertBox.textContent = 'Hole ' + currentHole + ' scores submitted! ✅';
                 alertBox.style.backgroundColor = "#dcfce7"; 
                 alertBox.style.color = "#166534";
                 
@@ -227,14 +241,56 @@
             }
         };
 
-        // 2. CACHE ASSASSIN
+        window.renderScorecard = function() {
+            const teamId = document.getElementById('select-scorecard-team').value;
+            const container = document.getElementById('scorecard-container');
+
+            if (!teamId) { container.classList.add('hidden'); return; }
+
+            const teamObj = window.globalCalculatedTeams[teamId];
+            if (!teamObj) {
+                container.innerHTML = '<div style="padding:20px; text-align:center; color:var(--text-sub);">Loading scorecard logic...</div>';
+                container.classList.remove('hidden');
+                return;
+            }
+
+            container.classList.remove('hidden');
+            const teamMembers = globalPlayers.filter(function(p) { return p.team_id === teamId; });
+            const pA = teamMembers[0] ? teamMembers[0].player_name.split(' ')[0] : 'Player 1';
+            const pB = teamMembers[1] ? teamMembers[1].player_name.split(' ')[0] : 'Player 2';
+
+            let html = '<table class="scorecard-table"><thead><tr><th>Hole</th><th>Par</th><th>' + pA + '</th><th>' + pB + '</th></tr></thead><tbody>';
+
+            for (let i = 1; i <= 18; i++) {
+                const holeData = teamObj.scores.find(function(h) { return h.hole_number === i; }) || { par: 4, player_a_strokes: null, player_b_strokes: null };
+                const pathChoice = teamObj.pathMap[i]; // Evaluates to 'A', 'B', or undefined
+
+                let scoreA = holeData.player_a_strokes;
+                let scoreB = holeData.player_b_strokes;
+
+                let classA = 'score-circle';
+                let classB = 'score-circle';
+
+                // ONLY circle the exact player chosen by the strict algorithm
+                if (pathChoice === 'A') classA += ' score-used';
+                if (pathChoice === 'B') classB += ' score-used';
+
+                let displayA = scoreA !== null ? '<span class="' + classA + '">' + scoreA + '</span>' : '-';
+                let displayB = scoreB !== null ? '<span class="' + classB + '">' + scoreB + '</span>' : '-';
+
+                html += '<tr><td>' + i + '</td><td>' + (holeData.par || 4) + '</td><td>' + displayA + '</td><td>' + displayB + '</td></tr>';
+            }
+
+            html += '</tbody></table>';
+            container.innerHTML = html;
+        };
+
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.getRegistrations().then(function(registrations) {
                 for(let i = 0; i < registrations.length; i++) { registrations[i].unregister(); }
             });
         }
 
-        // 3. DATABASE SETUP
         import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
         const DB_URL = "https://gnsqewjsxveezexpitky.supabase.co"; 
         const DB_KEY = "sb_publishable_cVHE5Ju2PWvsvZmdW3lINQ_SjIgP2kD";
@@ -247,159 +303,89 @@
         let sessionPlayers = [];
         let inputScoresState = {}; 
 
-        // 4. CORE ENGINES
+        // ⛳️ ADVANCED DEPTH-FIRST SEARCH OPTIMIZATION ENGINE
         function runOptimizationEngine(holeScores) {
-            const activeHoles = holeScores.filter(function(h) { return h.player_a_strokes !== null || h.player_b_strokes !== null; }).length;
-            let bestScore = Infinity; let optimalACount = 0; let optimalBCount = 0;
+            // Guarantee order for calculation
+            holeScores.sort(function(a, b) { return a.hole_number - b.hole_number; });
 
-            function exploreBranch(idx, accumulatingStrokes, countA, countB) {
+            const activeHoles = holeScores.filter(function(h) { return h.player_a_strokes !== null || h.player_b_strokes !== null; }).length;
+            let bestScore = Infinity; 
+            let optimalACount = 0; 
+            let optimalBCount = 0;
+            let bestPath = []; // Will store 'A' or 'B' for each hole
+
+            function exploreBranch(idx, accumulatingStrokes, countA, countB, currentPath) {
+                // Pruning logic: If this universe is already worse than the best one we found, kill the branch immediately.
                 if (accumulatingStrokes >= bestScore) return;
+
                 if (idx === holeScores.length) {
                     const holesLeft = 18 - activeHoles;
+                    // Strict constraint enforcement: Kills universes that miss the 6 count
                     if (activeHoles === 18 && (countA < 6 || countB < 6)) return;
                     if ((countA + holesLeft) < 6 || (countB + holesLeft) < 6) return;
-                    if (accumulatingStrokes < bestScore) { bestScore = accumulatingStrokes; optimalACount = countA; optimalBCount = countB; }
+                    
+                    if (accumulatingStrokes < bestScore) { 
+                        bestScore = accumulatingStrokes; 
+                        optimalACount = countA; 
+                        optimalBCount = countB; 
+                        bestPath = [...currentPath]; 
+                    }
                     return;
                 }
-                const currentHole = holeScores[idx];
-                if (currentHole.player_a_strokes === null && currentHole.player_b_strokes === null) { exploreBranch(idx + 1, accumulatingStrokes, countA, countB); return; }
-                if (currentHole.player_a_strokes !== null) { exploreBranch(idx + 1, accumulatingStrokes + currentHole.player_a_strokes, countA + 1, countB); }
-                if (currentHole.player_b_strokes !== null) { exploreBranch(idx + 1, accumulatingStrokes + currentHole.player_b_strokes, countA, countB + 1); }
+                
+                const h = holeScores[idx];
+                
+                if (h.player_a_strokes === null && h.player_b_strokes === null) { 
+                    currentPath.push(null); exploreBranch(idx + 1, accumulatingStrokes, countA, countB, currentPath); currentPath.pop(); return; 
+                }
+                if (h.player_b_strokes === null) { 
+                    currentPath.push('A'); exploreBranch(idx + 1, accumulatingStrokes + h.player_a_strokes, countA + 1, countB, currentPath); currentPath.pop(); return; 
+                }
+                if (h.player_a_strokes === null) { 
+                    currentPath.push('B'); exploreBranch(idx + 1, accumulatingStrokes + h.player_b_strokes, countA, countB + 1, currentPath); currentPath.pop(); return; 
+                }
+
+                const tryA = function() { currentPath.push('A'); exploreBranch(idx + 1, accumulatingStrokes + h.player_a_strokes, countA + 1, countB, currentPath); currentPath.pop(); };
+                const tryB = function() { currentPath.push('B'); exploreBranch(idx + 1, accumulatingStrokes + h.player_b_strokes, countA, countB + 1, currentPath); currentPath.pop(); };
+
+                // Dive into the most mathematically optimal choice first (helps the pruning algorithm)
+                if (h.player_a_strokes < h.player_b_strokes) { tryA(); tryB(); }
+                else if (h.player_b_strokes < h.player_a_strokes) { tryB(); tryA(); }
+                else {
+                    // ON TIE: Attempt to give the stroke to the player trailing in their requirement first!
+                    if (countA <= countB) { tryA(); tryB(); } else { tryB(); tryA(); }
+                }
             }
 
-            exploreBranch(0, 0, 0, 0);
+            exploreBranch(0, 0, 0, 0, []);
+
+            // Fallback Engine: If NO universe mathematically satisfies the 6-score rule yet, use greedy logic to prevent crashing
+            if (bestScore === Infinity) {
+                let greedyScore = 0; let gA = 0; let gB = 0;
+                bestPath = [];
+                holeScores.forEach(function(h) {
+                    if (h.player_a_strokes === null && h.player_b_strokes === null) { bestPath.push(null); } 
+                    else if (h.player_a_strokes !== null && h.player_b_strokes === null) { bestPath.push('A'); gA++; greedyScore += h.player_a_strokes; } 
+                    else if (h.player_b_strokes !== null && h.player_a_strokes === null) { bestPath.push('B'); gB++; greedyScore += h.player_b_strokes; } 
+                    else {
+                        if (h.player_a_strokes < h.player_b_strokes) { bestPath.push('A'); gA++; greedyScore += h.player_a_strokes; } 
+                        else if (h.player_b_strokes < h.player_a_strokes) { bestPath.push('B'); gB++; greedyScore += h.player_b_strokes; } 
+                        else {
+                            if (gA <= gB) { bestPath.push('A'); gA++; greedyScore += h.player_a_strokes; } 
+                            else { bestPath.push('B'); gB++; greedyScore += h.player_b_strokes; }
+                        }
+                    }
+                });
+                bestScore = greedyScore; optimalACount = gA; optimalBCount = gB;
+            }
+
+            // Map the path index back to actual hole numbers for the scorecard UI
+            let holePathMap = {};
+            holeScores.forEach(function(h, index) { holePathMap[h.hole_number] = bestPath[index]; });
 
             const totalParAccumulated = holeScores.reduce(function(sum, h) {
-                return sum + (h.player_a_strokes !== null || h.player_b_strokes !== null ? h.par : 0);
+                return sum + (holePathMap[h.hole_number] ? h.par : 0);
             }, 0);
 
             return {
-                totalStrokes: bestScore === Infinity ? 0 : bestScore,
-                relativeToPar: bestScore === Infinity ? 0 : bestScore - totalParAccumulated,
-                thru: activeHoles, usedA: optimalACount, usedB: optimalBCount
-            };
-        }
-
-        window.fetchAndCalculateLeaderboard = async function() {
-            const tbody = document.getElementById('leaderboard-body');
-            try {
-                const { data: matrix, error } = await dbClient.from('team_hole_scores_matrix').select('*');
-                if (error) throw error;
-
-                if (!matrix || matrix.length === 0) {
-                    tbody.innerHTML = "<tr><td colspan='4' style='text-align:center; padding:20px; color:var(--text-sub);'>Ready for Scores!</td></tr>";
-                    return;
-                }
-
-                const groupedData = matrix.reduce(function(acc, row) {
-                    if (!acc[row.team_id]) acc[row.team_id] = { name: row.team_name, scores: [] };
-                    acc[row.team_id].scores.push(row);
-                    return acc;
-                }, {});
-
-                const calculatedTeams = Object.keys(groupedData).map(function(tId) {
-                    const teamData = groupedData[tId];
-                    const engineData = runOptimizationEngine(teamData.scores);
-                    return Object.assign({}, { id: tId, name: teamData.name, scores: teamData.scores }, engineData);
-                }).sort(function(x, y) { return x.relativeToPar - y.relativeToPar; });
-
-                tbody.innerHTML = '';
-                
-                calculatedTeams.forEach(function(t) {
-                    const teamMembers = globalPlayers.filter(function(p) { return p.team_id === t.id; });
-                    const playerA = (teamMembers[0] && teamMembers[0].player_name) ? teamMembers[0].player_name : 'Player A';
-                    const playerB = (teamMembers[1] && teamMembers[1].player_name) ? teamMembers[1].player_name : 'Player B';
-                    const pAShort = playerA.split(' ')[0] || 'P1';
-                    const pBShort = playerB.split(' ')[0] || 'P2';
-
-                    let aStrokes = 0, aParTotal = 0, aThru = 0;
-                    let bStrokes = 0, bParTotal = 0, bThru = 0;
-
-                    t.scores.forEach(function(h) {
-                        if (h.player_a_strokes !== null) { aStrokes += h.player_a_strokes; aParTotal += h.par; aThru++; }
-                        if (h.player_b_strokes !== null) { bStrokes += h.player_b_strokes; bParTotal += h.par; bThru++; }
-                    });
-
-                    let aRel = aStrokes - aParTotal;
-                    let bRel = bStrokes - bParTotal;
-                    
-                    let formatRel = function(rel) { return rel === 0 ? 'E' : (rel > 0 ? '+' + rel : rel); };
-                    let colorRel = function(rel) { return rel < 0 ? '#dc2626' : (rel > 0 ? '#334155' : '#166534'); };
-
-                    let displayPar = t.relativeToPar === 0 ? 'E' : (t.relativeToPar > 0 ? '+' + t.relativeToPar : t.relativeToPar);
-                    let strokeColor = t.relativeToPar < 0 ? '#dc2626' : (t.relativeToPar > 0 ? '#334155' : '#166534');
-                    
-                    let tr = document.createElement('tr');
-                    tr.className = 'team-row';
-                    tr.onclick = function() { window.toggleSubRows(t.id); };
-                    tr.innerHTML = `
-                        <td class='td-bold'><span id="icon-${t.id}" class="chevron">▶</span> ${t.name}</td>
-                        <td class='td-bold' style='color: ${strokeColor}'>${displayPar}</td>
-                        <td>${t.thru}</td>
-                        <td style='font-size: 13px; color: var(--text-sub); line-height: 1.4;'>
-                            <strong>${pAShort}</strong>: ${t.usedA}<br>
-                            <strong>${pBShort}</strong>: ${t.usedB}
-                        </td>
-                    `;
-                    tbody.appendChild(tr);
-
-                    let trA = document.createElement('tr');
-                    trA.className = 'sub-row sub-' + t.id + ' hidden';
-                    trA.innerHTML = `
-                        <td style="padding-left: 32px;">↳ ${playerA}</td>
-                        <td class='td-bold' style='color: ${colorRel(aRel)}'>${formatRel(aRel)}</td>
-                        <td>${aThru}</td>
-                        <td>Used: ${t.usedA}</td>
-                    `;
-                    tbody.appendChild(trA);
-
-                    let trB = document.createElement('tr');
-                    trB.className = 'sub-row sub-' + t.id + ' hidden';
-                    trB.innerHTML = `
-                        <td style="padding-left: 32px;">↳ ${playerB}</td>
-                        <td class='td-bold' style='color: ${colorRel(bRel)}'>${formatRel(bRel)}</td>
-                        <td>${bThru}</td>
-                        <td>Used: ${t.usedB}</td>
-                    `;
-                    tbody.appendChild(trB);
-                });
-            } catch (err) {
-                tbody.innerHTML = `<tr><td colspan='4' style='text-align:center; color:#dc2626; padding:20px; font-weight:bold;'>CRASH: ${err.message}</td></tr>`;
-            }
-        };
-
-        async function bootApp() {
-            try {
-                document.getElementById('loading-message').innerText = "Connecting to Database...";
-                const resTeams = await dbClient.from('teams').select('*').order('team_name');
-                const resPlayers = await dbClient.from('players').select('*').order('player_name');
-                
-                if (resTeams.error) throw resTeams.error;
-                if (resPlayers.error) throw resPlayers.error;
-
-                globalTeams = resTeams.data || [];
-                globalPlayers = resPlayers.data || [];
-
-                const selectTeam = document.getElementById('select-team');
-                selectTeam.innerHTML = '<option value="">-- Choose Team Focus --</option>';
-                globalTeams.forEach(function(t) {
-                    let opt = document.createElement('option');
-                    opt.value = t.id; opt.textContent = t.team_name;
-                    selectTeam.appendChild(opt);
-                });
-
-                await window.fetchAndCalculateLeaderboard();
-                
-                dbClient.channel('public-scores-changes').on('postgres_changes', { event: '*', schema: 'public', table: 'scores' }, window.fetchAndCalculateLeaderboard).subscribe();
-
-            } catch (err) {
-                document.getElementById('loading-message').innerText = "INIT ERROR: " + err.message;
-                document.getElementById('loading-message').style.color = "#dc2626";
-            }
-        }
-
-        // 5. IGNITION
-        bootApp();
-    </script>
-</body>
-</html>
+                totalStrokes: bestScore, relativeToPar: bestScore -
